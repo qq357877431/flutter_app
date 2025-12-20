@@ -11,6 +11,8 @@
 **/DerivedData/
 Icon?
 **/Pods/
+# Keep Podfile
+!Podfile
 **/.symlinks/
 profile
 xcuserdata

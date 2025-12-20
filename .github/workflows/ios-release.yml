@@ -29,6 +29,7 @@ jobs:
         run: |
           flutter precache --ios
           flutter build ios --config-only --release --no-codesign
+          cd ios && pod install
 
       - name: Build iOS with xcodebuild
         working-directory: flutter_app
