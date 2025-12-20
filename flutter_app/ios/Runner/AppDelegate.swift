@@ -4,12 +4,15 @@ import CoreTelephony
 import UserNotifications
 
 @main
-@objc class AppDelegate: FlutterAppDelegate {
+@objc class AppDelegate: FlutterAppDelegate, UNUserNotificationCenterDelegate {
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     GeneratedPluginRegistrant.register(with: self)
+    
+    // 设置通知代理，允许前台显示通知
+    UNUserNotificationCenter.current().delegate = self
     
     // 请求网络权限（中国大陆 iOS 要求）
     requestNetworkPermission()
@@ -42,9 +45,30 @@ import UserNotifications
     UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
       if granted {
         print("通知权限已授予")
+        DispatchQueue.main.async {
+          UIApplication.shared.registerForRemoteNotifications()
+        }
       } else {
-        print("通知权限被拒绝")
+        print("通知权限被拒绝: \(String(describing: error))")
       }
     }
+  }
+  
+  // 允许在前台显示通知
+  override func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    willPresent notification: UNNotification,
+    withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+  ) {
+    completionHandler([.banner, .badge, .sound])
+  }
+  
+  // 处理通知点击
+  override func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    didReceive response: UNNotificationResponse,
+    withCompletionHandler completionHandler: @escaping () -> Void
+  ) {
+    completionHandler()
   }
 }
