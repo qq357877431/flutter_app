@@ -33,7 +33,7 @@ jobs:
       - name: Build iOS
         working-directory: flutter_app
         run: |
-          flutter build ios --release --no-codesign
+          flutter build ios --release --no-codesign --no-tree-shake-icons
 
       - name: Create IPA
         run: |
