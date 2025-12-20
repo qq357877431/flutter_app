@@ -6,6 +6,7 @@ import 'config/theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/api_service.dart';
+import 'services/notification_service.dart';
 import 'providers/auth_provider.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
@@ -13,6 +14,12 @@ final navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('zh_CN', null);
+  
+  // 初始化通知服务并请求权限
+  final notificationService = NotificationService();
+  await notificationService.initialize();
+  await notificationService.requestPermissions();
+  
   ApiService.navigatorKey = navigatorKey;
   runApp(const ProviderScope(child: MyApp()));
 }
