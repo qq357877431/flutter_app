@@ -82,11 +82,12 @@ jobs:
         run: |
           mkdir -p Payload
           cp -r flutter_app/build/ios/iphoneos/Runner.app Payload/
-          zip -r 每日计划-unsigned.ipa Payload
+          zip -r daily-planner-unsigned.ipa Payload
+          ls -la *.ipa
 
       - name: Upload IPA as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: 每日计划-unsigned
-          path: 每日计划-unsigned.ipa
+          name: daily-planner-ipa
+          path: daily-planner-unsigned.ipa
           retention-days: 30
