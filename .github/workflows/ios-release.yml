@@ -52,7 +52,31 @@ jobs:
       - name: Build iOS
         working-directory: flutter_app
         run: |
-          flutter build ios --release --no-codesign --no-tree-shake-icons
+          # 清理之前的构建
+          flutter clean
+          flutter pub get
+          # 构建 iOS (使用 archive 方式避免 Run Script 问题)
+          flutter build ios --release --no-codesign --no-tree-shake-icons 2>&1 || true
+          
+          # 如果上面失败，尝试直接用 xcodebuild
+          if [ ! -d "build/ios/iphoneos/Runner.app" ]; then
+            echo "Flutter build failed, trying xcodebuild directly..."
+            cd ios
+            xcodebuild -workspace Runner.xcworkspace \
+              -scheme Runner \
+              -configuration Release \
+              -sdk iphoneos \
+              -destination 'generic/platform=iOS' \
+              CODE_SIGN_IDENTITY="" \
+              CODE_SIGNING_REQUIRED=NO \
+              CODE_SIGNING_ALLOWED=NO \
+              ONLY_ACTIVE_ARCH=NO \
+              archive -archivePath build/Runner.xcarchive
+            
+            # 从 archive 中提取 app
+            mkdir -p ../build/ios/iphoneos
+            cp -r build/Runner.xcarchive/Products/Applications/Runner.app ../build/ios/iphoneos/
+          fi
 
       - name: Create IPA
         run: |
