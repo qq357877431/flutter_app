@@ -6,10 +6,10 @@ services:
     container_name: daily_planner_mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: DailyPlanner2024!
+      MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: daily_planner
       MYSQL_USER: planner
-      MYSQL_PASSWORD: Planner123!
+      MYSQL_PASSWORD: nagenanren123
     volumes:
       - mysql_data:/var/lib/mysql
     ports:
@@ -31,12 +31,12 @@ services:
       DB_HOST: mysql
       DB_PORT: 3306
       DB_USER: planner
-      DB_PASSWORD: Planner123!
+      DB_PASSWORD: nagenanren123
       DB_NAME: daily_planner
       JWT_SECRET: your-super-secret-jwt-key-2024
       SERVER_PORT: 8080
     ports:
-      - "9880:8080"
+      - "8080:8080"
 
 volumes:
   mysql_data:
