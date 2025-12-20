@@ -1,0 +1,63 @@
+package main
+
+import (
+	"log"
+
+	"daily-planner-backend/internal/config"
+	"daily-planner-backend/internal/database"
+	"daily-planner-backend/internal/handlers"
+	"daily-planner-backend/internal/middleware"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	cfg := config.Load()
+
+	middleware.SetJWTSecret(cfg.JWTSecret)
+
+	if err := database.Init(cfg); err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+
+	if err := database.AutoMigrate(); err != nil {
+		log.Fatalf("Failed to migrate database: %v", err)
+	}
+
+	r := gin.Default()
+
+	// Auth routes (public)
+	auth := r.Group("/api/auth")
+	{
+		auth.POST("/register", handlers.Register)
+		auth.POST("/login", handlers.Login)
+	}
+
+	// Protected routes
+	api := r.Group("/api")
+	api.Use(middleware.JWTMiddleware())
+	{
+		// Plans
+		api.GET("/plans", handlers.GetPlans)
+		api.POST("/plans", handlers.CreatePlan)
+		api.PUT("/plans/:id", handlers.UpdatePlan)
+		api.DELETE("/plans/:id", handlers.DeletePlan)
+
+		// Expenses
+		api.GET("/expenses", handlers.GetExpenses)
+		api.POST("/expenses", handlers.CreateExpense)
+		api.PUT("/expenses/:id", handlers.UpdateExpense)
+		api.DELETE("/expenses/:id", handlers.DeleteExpense)
+
+		// Reminders
+		api.GET("/reminders", handlers.GetReminders)
+		api.POST("/reminders", handlers.CreateReminder)
+		api.PUT("/reminders/:id", handlers.UpdateReminder)
+		api.DELETE("/reminders/:id", handlers.DeleteReminder)
+	}
+
+	log.Printf("Server starting on port %s", cfg.ServerPort)
+	if err := r.Run(":" + cfg.ServerPort); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
+}
