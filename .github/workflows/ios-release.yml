@@ -24,18 +24,30 @@ jobs:
         working-directory: flutter_app
         run: flutter pub get
 
-      - name: Build iOS (no codesign)
+      - name: Build iOS Archive
         working-directory: flutter_app
-        run: flutter build ios --release --no-codesign
+        run: |
+          flutter build ios --release --no-codesign --simulator
+          
+      - name: Build iOS for device (unsigned)
+        working-directory: flutter_app
+        run: |
+          xcodebuild -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath build/Runner.xcarchive \
+            archive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM=""
 
-      - name: Create Payload directory
-        run: mkdir -p Payload
-
-      - name: Copy Runner.app to Payload
-        run: cp -r flutter_app/build/ios/iphoneos/Runner.app Payload/
-
-      - name: Create IPA file
-        run: zip -r DailyPlanner.ipa Payload
+      - name: Create IPA
+        run: |
+          mkdir -p Payload
+          cp -r flutter_app/build/Runner.xcarchive/Products/Applications/Runner.app Payload/
+          zip -r DailyPlanner-unsigned.ipa Payload
 
       - name: Get current date
         id: date
@@ -46,7 +58,7 @@ jobs:
         with:
           tag_name: v1.0.0-${{ steps.date.outputs.date }}
           name: Release ${{ steps.date.outputs.date }}
-          files: DailyPlanner.ipa
+          files: DailyPlanner-unsigned.ipa
           draft: false
           prerelease: true
         env:
