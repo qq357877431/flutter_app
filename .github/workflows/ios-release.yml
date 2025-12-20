@@ -41,23 +41,9 @@ jobs:
           cp -r flutter_app/build/ios/iphoneos/Runner.app Payload/
           zip -r DailyPlanner-unsigned.ipa Payload
 
-      - name: Get current date
-        id: date
-        run: echo "date=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
-
       - name: Upload IPA as artifact
         uses: actions/upload-artifact@v4
         with:
           name: DailyPlanner-unsigned
           path: DailyPlanner-unsigned.ipa
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v1.0.0-${{ steps.date.outputs.date }}
-          name: Release ${{ steps.date.outputs.date }}
-          files: DailyPlanner-unsigned.ipa
-          draft: false
-          prerelease: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          retention-days: 30
