@@ -147,47 +147,50 @@ class _WaterScreenState extends State<WaterScreen> {
     showCupertinoModalPopup(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) => Container(
-          height: 400,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: CupertinoColors.systemBackground.resolveFrom(ctx),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('喝水提醒', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  CupertinoButton(child: const Text('完成'), onPressed: () {
-                    Navigator.pop(ctx);
-                    _saveData();
-                    if (_reminderEnabled) _scheduleReminder();
-                  }),
-                ],
-              ),
-              const SizedBox(height: 20),
-              _settingRow('开启提醒', Switch.adaptive(
-                value: _reminderEnabled,
-                onChanged: (v) {
-                  setSheetState(() => _reminderEnabled = v);
-                  setState(() => _reminderEnabled = v);
-                  if (!v) _notificationService.cancelNotification(2000);
-                },
-              )),
-              _settingRow('开始时间', GestureDetector(
-                onTap: () => _pickTime(ctx, setSheetState),
-                child: Text('${_startTime.hour.toString().padLeft(2, '0')}:${_startTime.minute.toString().padLeft(2, '0')}',
-                  style: const TextStyle(color: Color(0xFF007AFF), fontSize: 16)),
-              )),
-              _settingRow('提醒间隔', GestureDetector(
-                onTap: () => _pickInterval(ctx, setSheetState),
-                child: Text('${_intervalMinutes}分钟',
-                  style: const TextStyle(color: Color(0xFF007AFF), fontSize: 16)),
-              )),
-            ],
+        builder: (ctx, setSheetState) => Material(
+          color: Colors.transparent,
+          child: Container(
+            height: 300,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: CupertinoColors.systemBackground.resolveFrom(ctx),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('喝水提醒', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    CupertinoButton(child: const Text('完成'), onPressed: () {
+                      Navigator.pop(ctx);
+                      _saveData();
+                      if (_reminderEnabled) _scheduleReminder();
+                    }),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                _settingRow('开启提醒', CupertinoSwitch(
+                  value: _reminderEnabled,
+                  onChanged: (v) {
+                    setSheetState(() => _reminderEnabled = v);
+                    setState(() => _reminderEnabled = v);
+                    if (!v) _notificationService.cancelNotification(2000);
+                  },
+                )),
+                _settingRow('开始时间', GestureDetector(
+                  onTap: () => _pickTime(ctx, setSheetState),
+                  child: Text('${_startTime.hour.toString().padLeft(2, '0')}:${_startTime.minute.toString().padLeft(2, '0')}',
+                    style: const TextStyle(color: Color(0xFF007AFF), fontSize: 16)),
+                )),
+                _settingRow('提醒间隔', GestureDetector(
+                  onTap: () => _pickInterval(ctx, setSheetState),
+                  child: Text('${_intervalMinutes}分钟',
+                    style: const TextStyle(color: Color(0xFF007AFF), fontSize: 16)),
+                )),
+              ],
+            ),
           ),
         ),
       ),
