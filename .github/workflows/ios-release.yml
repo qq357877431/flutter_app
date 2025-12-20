@@ -24,33 +24,42 @@ jobs:
         working-directory: flutter_app
         run: flutter pub get
 
-      - name: Install CocoaPods
-        working-directory: flutter_app/ios
-        run: pod install
+      - name: Prepare iOS build
+        working-directory: flutter_app
+        run: |
+          flutter precache --ios
+          flutter build ios --config-only --release --no-codesign
 
-      - name: Build iOS (unsigned)
+      - name: Build iOS with xcodebuild
         working-directory: flutter_app
         run: |
           xcodebuild -workspace ios/Runner.xcworkspace \
             -scheme Runner \
             -configuration Release \
             -sdk iphoneos \
-            -derivedDataPath build/ios \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/Runner.xcarchive \
+            archive \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            DEVELOPMENT_TEAM="" \
-            build
+            CODE_SIGN_IDENTITY="-" \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
 
       - name: Create IPA
         run: |
           mkdir -p Payload
-          cp -r flutter_app/build/ios/Build/Products/Release-iphoneos/Runner.app Payload/
+          cp -r flutter_app/build/Runner.xcarchive/Products/Applications/Runner.app Payload/
           zip -r DailyPlanner-unsigned.ipa Payload
 
       - name: Get current date
         id: date
         run: echo "date=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+
+      - name: Upload IPA as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DailyPlanner-unsigned
+          path: DailyPlanner-unsigned.ipa
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
