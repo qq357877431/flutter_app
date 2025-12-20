@@ -25,6 +25,7 @@ import UserNotifications
   
   // 触发网络权限弹窗
   private func requestNetworkPermission() {
+    // 方法1: 使用 CTCellularData 监听网络权限状态
     let cellularData = CTCellularData()
     cellularData.cellularDataRestrictionDidUpdateNotifier = { state in
       switch state {
@@ -36,6 +37,14 @@ import UserNotifications
         print("网络权限状态未知")
       @unknown default:
         break
+      }
+    }
+    
+    // 方法2: 发起一个网络请求来触发系统的网络权限弹窗
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+      if let url = URL(string: "https://www.apple.com") {
+        let task = URLSession.shared.dataTask(with: url) { _, _, _ in }
+        task.resume()
       }
     }
   }

@@ -25,6 +25,9 @@ class NotificationService {
 
     _isSupported = true;
     tz.initializeTimeZones();
+    
+    // 设置本地时区为上海
+    tz.setLocalLocation(tz.getLocation('Asia/Shanghai'));
 
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
