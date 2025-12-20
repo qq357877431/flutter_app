@@ -38,7 +38,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> checkAuth() async {
     await _apiService.loadToken();
     if (_apiService.hasToken) {
-      state = state.copyWith(isLoggedIn: true);
+      // 验证 token 是否有效
+      final isValid = await _apiService.verifyToken();
+      if (isValid) {
+        state = state.copyWith(isLoggedIn: true);
+      } else {
+        // token 无效，清除并跳转登录
+        await _apiService.clearToken();
+        state = state.copyWith(isLoggedIn: false);
+      }
     }
   }
 

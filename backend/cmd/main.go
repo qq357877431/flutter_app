@@ -37,6 +37,9 @@ func main() {
 	api := r.Group("/api")
 	api.Use(middleware.JWTMiddleware())
 	{
+		// Token验证
+		api.GET("/auth/verify", handlers.VerifyToken)
+
 		// Plans
 		api.GET("/plans", handlers.GetPlans)
 		api.POST("/plans", handlers.CreatePlan)

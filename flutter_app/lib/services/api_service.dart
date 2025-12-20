@@ -78,6 +78,18 @@ class ApiService {
     });
   }
 
+  // 验证token是否有效
+  Future<bool> verifyToken() async {
+    if (_token == null) return false;
+    try {
+      await _dio.get('/auth/verify');
+      return true;
+    } catch (e) {
+      await clearToken();
+      return false;
+    }
+  }
+
   // Plans
   Future<Response> getPlans({String? date}) async {
     return _dio.get('/plans', queryParameters: date != null ? {'date': date} : null);

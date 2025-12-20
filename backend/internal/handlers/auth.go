@@ -87,3 +87,24 @@ func Login(c *gin.Context) {
 		"user":    user,
 	})
 }
+
+
+// VerifyToken 验证token是否有效
+func VerifyToken(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+		return
+	}
+
+	var user models.User
+	if err := database.GetDB().First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"valid": true,
+		"user":  user,
+	})
+}
