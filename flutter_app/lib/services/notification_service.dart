@@ -218,6 +218,31 @@ class NotificationService {
     await _notifications.cancelAll();
   }
 
+  /// 立即发送测试通知
+  Future<void> showTestNotification() async {
+    if (!_isSupported) return;
+    
+    await _notifications.show(
+      9999,
+      '测试通知',
+      '通知功能正常工作！🎉',
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'test_notification',
+          '测试通知',
+          channelDescription: '测试通知功能',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+    );
+  }
+
   tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
     final now = tz.TZDateTime.now(tz.local);
     var scheduledDate = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);

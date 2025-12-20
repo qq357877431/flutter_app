@@ -150,7 +150,7 @@ class _WaterScreenState extends State<WaterScreen> {
         builder: (ctx, setSheetState) => Material(
           color: Colors.transparent,
           child: Container(
-            height: 300,
+            height: 380,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: CupertinoColors.systemBackground.resolveFrom(ctx),
@@ -176,7 +176,12 @@ class _WaterScreenState extends State<WaterScreen> {
                   onChanged: (v) {
                     setSheetState(() => _reminderEnabled = v);
                     setState(() => _reminderEnabled = v);
-                    if (!v) _notificationService.cancelNotification(2000);
+                    if (!v) {
+                      // 取消所有喝水提醒
+                      for (int i = 0; i < 16; i++) {
+                        _notificationService.cancelNotification(2000 + i);
+                      }
+                    }
                   },
                 )),
                 _settingRow('开始时间', GestureDetector(
@@ -189,6 +194,22 @@ class _WaterScreenState extends State<WaterScreen> {
                   child: Text('${_intervalMinutes}分钟',
                     style: const TextStyle(color: Color(0xFF007AFF), fontSize: 16)),
                 )),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: CupertinoButton(
+                    color: const Color(0xFF007AFF),
+                    onPressed: () async {
+                      await _notificationService.showTestNotification();
+                      if (ctx.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('测试通知已发送'), duration: Duration(seconds: 2)),
+                        );
+                      }
+                    },
+                    child: const Text('发送测试通知', style: TextStyle(color: Colors.white)),
+                  ),
+                ),
               ],
             ),
           ),
