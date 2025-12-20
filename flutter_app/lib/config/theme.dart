@@ -22,7 +22,7 @@ class AppTheme {
         backgroundColor: Colors.transparent,
         foregroundColor: CupertinoColors.label,
       ),
-      cardTheme: const CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
         color: CupertinoColors.systemBackground,
@@ -64,7 +64,7 @@ class AppTheme {
         scrolledUnderElevation: 0,
         backgroundColor: Colors.transparent,
       ),
-      cardTheme: const CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
       ),
