@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: daily_planner_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: DailyPlanner2024!
+      MYSQL_DATABASE: daily_planner
+      MYSQL_USER: planner
+      MYSQL_PASSWORD: Planner123!
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: daily_planner_backend
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: planner
+      DB_PASSWORD: Planner123!
+      DB_NAME: daily_planner
+      JWT_SECRET: your-super-secret-jwt-key-2024
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
+
+volumes:
+  mysql_data:
