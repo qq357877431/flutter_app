@@ -153,43 +153,57 @@ class NotificationService {
     int id = 2000,
     int startHour = 8,
     int startMinute = 0,
-    int intervalMinutes = 120,
+    int intervalMinutes = 60,
   }) async {
     if (!_isSupported) return;
     
-    // 计算下一个提醒时间
-    final now = tz.TZDateTime.now(tz.local);
-    var scheduledTime = tz.TZDateTime(tz.local, now.year, now.month, now.day, startHour, startMinute);
-    
-    // 如果开始时间已过，计算下一个间隔时间
-    if (scheduledTime.isBefore(now)) {
-      final elapsed = now.difference(scheduledTime).inMinutes;
-      final intervals = (elapsed / intervalMinutes).ceil();
-      scheduledTime = scheduledTime.add(Duration(minutes: intervals * intervalMinutes));
+    // 取消之前的提醒
+    for (int i = 0; i < 16; i++) {
+      await _notifications.cancel(id + i);
     }
     
-    await _notifications.zonedSchedule(
-      id,
-      '喝水提醒',
-      '记得喝水，保持健康！',
-      scheduledTime,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'water_reminder',
-          '喝水提醒',
-          channelDescription: '定时喝水提醒',
-          importance: Importance.high,
-          priority: Priority.high,
+    // 计算从开始时间到晚上22点的所有提醒时间
+    final now = tz.TZDateTime.now(tz.local);
+    final endHour = 22; // 晚上10点停止提醒
+    
+    int notificationIndex = 0;
+    var currentTime = tz.TZDateTime(tz.local, now.year, now.month, now.day, startHour, startMinute);
+    
+    while (currentTime.hour < endHour && notificationIndex < 16) {
+      var scheduledTime = currentTime;
+      
+      // 如果时间已过，设置为明天
+      if (scheduledTime.isBefore(now)) {
+        scheduledTime = scheduledTime.add(const Duration(days: 1));
+      }
+      
+      await _notifications.zonedSchedule(
+        id + notificationIndex,
+        '喝水提醒',
+        '记得喝水，保持健康！💧',
+        scheduledTime,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'water_reminder',
+            '喝水提醒',
+            channelDescription: '定时喝水提醒',
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
         ),
-        iOS: DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-        ),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-    );
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time, // 每天重复
+      );
+      
+      currentTime = currentTime.add(Duration(minutes: intervalMinutes));
+      notificationIndex++;
+    }
   }
 
   /// 取消指定提醒
