@@ -19,8 +19,8 @@ jobs:
         working-directory: flutter_app
         run: |
           # 获取当前版本号
-          CURRENT_VERSION=$(grep "version:" pubspec.yaml | sed 's/version: //' | cut -d'+' -f1)
-          CURRENT_BUILD=$(grep "version:" pubspec.yaml | sed 's/version: //' | cut -d'+' -f2)
+          CURRENT_VERSION=$(grep "^version:" pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+          CURRENT_BUILD=$(grep "^version:" pubspec.yaml | awk '{print $2}' | cut -d'+' -f2)
           
           # 递增 patch 版本
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
@@ -28,8 +28,8 @@ jobs:
           NEW_BUILD=$((CURRENT_BUILD + 1))
           NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH+$NEW_BUILD"
           
-          # 更新 pubspec.yaml
-          sed -i "s/version: .*/version: $NEW_VERSION/" pubspec.yaml
+          # 更新 pubspec.yaml (macOS sed 需要 -i '')
+          sed -i '' "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
           echo "Updated version to $NEW_VERSION"
 
       - name: Setup Flutter
