@@ -5,6 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'config/theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/splash_screen.dart';
 import 'services/api_service.dart';
 import 'services/notification_service.dart';
 import 'providers/auth_provider.dart';
@@ -24,24 +25,11 @@ void main() async {
   runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends ConsumerStatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
-  ConsumerState<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends ConsumerState<MyApp> {
-  @override
-  void initState() {
-    super.initState();
-    Future.microtask(() => ref.read(authProvider.notifier).checkAuth());
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-
     return MaterialApp(
       title: '每日计划',
       debugShowCheckedModeBanner: false,
@@ -50,8 +38,9 @@ class _MyAppState extends ConsumerState<MyApp> {
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
       scrollBehavior: AppTheme.scrollBehavior,
-      initialRoute: authState.isLoggedIn ? '/home' : '/login',
+      initialRoute: '/',
       routes: {
+        '/': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
       },
