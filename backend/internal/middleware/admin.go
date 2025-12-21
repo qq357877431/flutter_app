@@ -28,7 +28,7 @@ func AdminMiddleware() gin.HandlerFunc {
 		token := parts[1]
 
 		// 验证 token
-		claims, err := ValidateToken(token)
+		claims, err := ParseToken(token)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
 			c.Abort()

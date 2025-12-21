@@ -15,8 +15,6 @@ services:
       DB_NAME: daily_planner
       JWT_SECRET: your-super-secret-jwt-key-2024
       SERVER_PORT: 8080
-    ports:
-      - "8080:8080"
     network_mode: host
     command: sh -c "cd /app && go mod download && go run ./cmd/main.go"
     volumes:
@@ -28,8 +26,6 @@ services:
       dockerfile: Dockerfile
     container_name: daily_planner_admin
     restart: always
-    ports:
-      - "3000:80"
     network_mode: host
     depends_on:
       - backend

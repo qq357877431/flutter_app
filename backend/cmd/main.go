@@ -8,6 +8,7 @@ import (
 	"daily-planner-backend/internal/handlers"
 	"daily-planner-backend/internal/middleware"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -25,6 +26,14 @@ func main() {
 	}
 
 	r := gin.Default()
+
+	// CORS 配置
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowCredentials: true,
+	}))
 
 	// Auth routes (public)
 	auth := r.Group("/api/auth")
