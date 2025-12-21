@@ -55,8 +55,14 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF2F2F7);
+    final cardColor = isDark ? const Color(0xFF2C2C2E) : Colors.white;
+    final textSecondary = isDark ? const Color(0xFF8E8E93) : Colors.grey[600];
+    final itemBgColor = isDark ? const Color(0xFF3A3A3C) : Colors.grey[100];
+    
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F7),
+      backgroundColor: bgColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -64,7 +70,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         actions: [
           TextButton(
             onPressed: _skip,
-            child: Text('跳过', style: TextStyle(color: Colors.grey[600], fontSize: 16)),
+            child: Text('跳过', style: TextStyle(color: textSecondary, fontSize: 16)),
           ),
         ],
       ),
@@ -87,7 +93,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               const SizedBox(height: 8),
               Text(
                 '设置你的昵称和头像，让大家认识你',
-                style: TextStyle(fontSize: 15, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 15, color: textSecondary),
               ),
               const SizedBox(height: 40),
               
@@ -119,7 +125,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Text('选择头像', style: TextStyle(color: Colors.grey[600])),
+                    Text('选择头像', style: TextStyle(color: textSecondary)),
                   ],
                 ),
               ),
@@ -129,7 +135,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: cardColor,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Wrap(
@@ -144,7 +150,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                         width: 50,
                         height: 50,
                         decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFF667EEA).withOpacity(0.1) : Colors.grey[100],
+                          color: isSelected ? const Color(0xFF667EEA).withOpacity(0.1) : itemBgColor,
                           borderRadius: BorderRadius.circular(12),
                           border: isSelected ? Border.all(color: const Color(0xFF667EEA), width: 2) : null,
                         ),
@@ -159,19 +165,21 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               const SizedBox(height: 30),
               
               // 昵称输入
-              Text('昵称', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+              Text('昵称', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textSecondary)),
               const SizedBox(height: 8),
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: cardColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: CupertinoTextField(
                   controller: _nicknameController,
                   placeholder: '给自己取个名字吧',
                   padding: const EdgeInsets.all(16),
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
+                  placeholderStyle: TextStyle(color: textSecondary),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: cardColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   maxLength: 20,
@@ -180,30 +188,32 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               const SizedBox(height: 40),
               
               // 保存按钮
-              Container(
+              SizedBox(
                 width: double.infinity,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF667EEA).withOpacity(0.4),
-                      blurRadius: 15,
-                      offset: const Offset(0, 8),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
                     ),
-                  ],
-                ),
-                child: CupertinoButton(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  onPressed: _isLoading ? null : _saveProfile,
-                  child: _isLoading
-                      ? const CupertinoActivityIndicator(color: Colors.white)
-                      : const Text(
-                          '完成设置',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 17),
-                        ),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF667EEA).withOpacity(0.4),
+                        blurRadius: 15,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: CupertinoButton(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    onPressed: _isLoading ? null : _saveProfile,
+                    child: _isLoading
+                        ? const CupertinoActivityIndicator(color: Colors.white)
+                        : const Text(
+                            '完成设置',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 17),
+                          ),
+                  ),
                 ),
               ),
             ],

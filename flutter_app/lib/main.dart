@@ -10,6 +10,7 @@ import 'screens/profile_setup_screen.dart';
 import 'services/api_service.dart';
 import 'services/notification_service.dart';
 import 'providers/auth_provider.dart';
+import 'providers/theme_provider.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -26,18 +27,20 @@ void main() async {
   runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
+    
     return MaterialApp(
       title: 'Plan Manager',
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       scrollBehavior: AppTheme.scrollBehavior,
       initialRoute: '/',
       routes: {

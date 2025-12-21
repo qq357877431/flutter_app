@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/auth_provider.dart';
+import '../providers/theme_provider.dart';
 import '../services/notification_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -105,9 +106,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final user = authState.user;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF2C2C2E) : Colors.white;
+    final bgColor = isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF2F2F7);
+    final textSecondary = isDark ? const Color(0xFF8E8E93) : Colors.grey[600];
     
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F7),
+      backgroundColor: bgColor,
       appBar: AppBar(
         title: const Text('设置', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
@@ -194,14 +199,37 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 24),
           
+          // 外观设置标题
+          Padding(
+            padding: const EdgeInsets.only(left: 16, bottom: 8),
+            child: Text('外观', style: TextStyle(fontSize: 13, color: textSecondary)),
+          ),
+          // 主题设置
+          Container(
+            decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(12)),
+            child: ListTile(
+              leading: _icon(Icons.palette, const Color(0xFF34C759)),
+              title: const Text('主题模式'),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(_getThemeModeText(ref.watch(themeModeProvider)), style: TextStyle(color: textSecondary)),
+                  Icon(Icons.chevron_right, color: textSecondary),
+                ],
+              ),
+              onTap: _showThemePicker,
+            ),
+          ),
+          const SizedBox(height: 24),
+          
           // 提醒设置标题
           Padding(
             padding: const EdgeInsets.only(left: 16, bottom: 8),
-            child: Text('提醒设置', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+            child: Text('提醒设置', style: TextStyle(fontSize: 13, color: textSecondary)),
           ),
           // 早睡提醒
           Container(
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(12)),
             child: Column(
               children: [
                 ListTile(
@@ -211,15 +239,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   trailing: Switch.adaptive(value: _bedtimeEnabled, onChanged: _toggleBedtime),
                 ),
                 if (_bedtimeEnabled) ...[
-                  const Divider(height: 1, indent: 56),
+                  Divider(height: 1, indent: 56, color: isDark ? const Color(0xFF38383A) : null),
                   ListTile(
                     leading: _icon(Icons.access_time, const Color(0xFF007AFF)),
                     title: const Text('提醒时间'),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(_formatTime(_bedtime), style: TextStyle(color: Colors.grey[600])),
-                        const Icon(Icons.chevron_right, color: Colors.grey),
+                        Text(_formatTime(_bedtime), style: TextStyle(color: textSecondary)),
+                        Icon(Icons.chevron_right, color: textSecondary),
                       ],
                     ),
                     onTap: _showBedtimePicker,
@@ -232,14 +260,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           // 账户标题
           Padding(
             padding: const EdgeInsets.only(left: 16, bottom: 8),
-            child: Text('账户', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+            child: Text('账户', style: TextStyle(fontSize: 13, color: textSecondary)),
           ),
           Container(
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(12)),
             child: ListTile(
               leading: _icon(Icons.logout, const Color(0xFFFF3B30)),
               title: const Text('退出登录', style: TextStyle(color: Color(0xFFFF3B30))),
-              trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+              trailing: Icon(Icons.chevron_right, color: textSecondary),
               onTap: _showLogoutDialog,
             ),
           ),
@@ -247,14 +275,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           // 关于标题
           Padding(
             padding: const EdgeInsets.only(left: 16, bottom: 8),
-            child: Text('关于', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+            child: Text('关于', style: TextStyle(fontSize: 13, color: textSecondary)),
           ),
           Container(
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(12)),
             child: ListTile(
               leading: _icon(Icons.info_outline, const Color(0xFF007AFF)),
               title: const Text('版本'),
-              trailing: Text('1.2.0', style: TextStyle(color: Colors.grey[600])),
+              trailing: Text('1.2.0', style: TextStyle(color: textSecondary)),
             ),
           ),
         ],
@@ -398,6 +426,87 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       height: 32,
       decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(8)),
       child: Icon(icon, color: Colors.white, size: 18),
+    );
+  }
+
+  String _getThemeModeText(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.light:
+        return '浅色';
+      case ThemeMode.dark:
+        return '深色';
+      case ThemeMode.system:
+        return '跟随系统';
+    }
+  }
+
+  void _showThemePicker() {
+    final currentMode = ref.read(themeModeProvider);
+    showCupertinoModalPopup(
+      context: context,
+      builder: (ctx) => CupertinoActionSheet(
+        title: const Text('选择主题模式'),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () {
+              ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.light);
+              Navigator.pop(ctx);
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.light_mode, size: 20),
+                const SizedBox(width: 8),
+                const Text('浅色'),
+                if (currentMode == ThemeMode.light) ...[
+                  const SizedBox(width: 8),
+                  const Icon(Icons.check, color: Color(0xFF007AFF), size: 20),
+                ],
+              ],
+            ),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.dark);
+              Navigator.pop(ctx);
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.dark_mode, size: 20),
+                const SizedBox(width: 8),
+                const Text('深色'),
+                if (currentMode == ThemeMode.dark) ...[
+                  const SizedBox(width: 8),
+                  const Icon(Icons.check, color: Color(0xFF007AFF), size: 20),
+                ],
+              ],
+            ),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.system);
+              Navigator.pop(ctx);
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.settings_suggest, size: 20),
+                const SizedBox(width: 8),
+                const Text('跟随系统'),
+                if (currentMode == ThemeMode.system) ...[
+                  const SizedBox(width: 8),
+                  const Icon(Icons.check, color: Color(0xFF007AFF), size: 20),
+                ],
+              ],
+            ),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('取消'),
+        ),
+      ),
     );
   }
 
