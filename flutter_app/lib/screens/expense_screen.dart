@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../config/colors.dart';
 import '../models/expense.dart';
 import '../providers/expense_provider.dart';
 
@@ -265,6 +266,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
     final currencyFormat = NumberFormat.currency(locale: 'zh_CN', symbol: '¥');
     final dateFormat = DateFormat('MM/dd HH:mm');
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors(isDark);
     final bgColors = isDark 
         ? [const Color(0xFF1C1C1E), const Color(0xFF1C1C1E), const Color(0xFF1C1C1E)]
         : [const Color(0xFFE8F5E9), const Color(0xFFF0FFF4), Colors.white];
@@ -287,7 +289,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                 child: Row(
                   children: [
                     ShaderMask(
-                      shaderCallback: (b) => const LinearGradient(colors: [Color(0xFF43E97B), Color(0xFF38F9D7)]).createShader(b),
+                      shaderCallback: (b) => LinearGradient(colors: colors.greenGradient).createShader(b),
                       child: const Text('消费记录', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
                     ),
                     const Spacer(),
@@ -298,11 +300,11 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: (_selectedYear != null || _selectedMonth != null) 
-                              ? const Color(0xFF43E97B).withOpacity(0.15)
+                              ? colors.green.withOpacity(0.15)
                               : Colors.grey.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(20),
                           border: (_selectedYear != null || _selectedMonth != null)
-                              ? Border.all(color: const Color(0xFF43E97B), width: 1)
+                              ? Border.all(color: colors.green, width: 1)
                               : null,
                         ),
                         child: Row(
@@ -312,8 +314,8 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                               CupertinoIcons.calendar,
                               size: 16,
                               color: (_selectedYear != null || _selectedMonth != null)
-                                  ? const Color(0xFF43E97B)
-                                  : Colors.grey[600],
+                                  ? colors.green
+                                  : (isDark ? const Color(0xFF8E8E93) : Colors.grey[600]),
                             ),
                             const SizedBox(width: 4),
                             Text(
@@ -323,8 +325,8 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                               style: TextStyle(
                                 fontSize: 13,
                                 color: (_selectedYear != null || _selectedMonth != null)
-                                    ? const Color(0xFF43E97B)
-                                    : Colors.grey[600],
+                                    ? colors.green
+                                    : (isDark ? const Color(0xFF8E8E93) : Colors.grey[600]),
                                 fontWeight: (_selectedYear != null || _selectedMonth != null)
                                     ? FontWeight.w600
                                     : FontWeight.normal,
@@ -343,13 +345,13 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 padding: const EdgeInsets.all(22),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
+                  gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [Color(0xFF43E97B), Color(0xFF38F9D7)],
+                    colors: colors.greenGradient,
                   ),
                   borderRadius: BorderRadius.circular(20),
-                  boxShadow: [BoxShadow(color: const Color(0xFF43E97B).withOpacity(0.4), blurRadius: 20, offset: const Offset(0, 10))],
+                  boxShadow: [BoxShadow(color: colors.greenGradient.first.withOpacity(colors.shadowOpacity), blurRadius: 20, offset: const Offset(0, 10))],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -394,7 +396,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                 child: Row(
                   children: [
                     ShaderMask(
-                      shaderCallback: (b) => const LinearGradient(colors: [Color(0xFF43E97B), Color(0xFF38F9D7)]).createShader(b),
+                      shaderCallback: (b) => LinearGradient(colors: colors.greenGradient).createShader(b),
                       child: const Text('消费明细', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
                     ),
                   ],
@@ -413,17 +415,17 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(24),
                                   decoration: BoxDecoration(
-                                    gradient: LinearGradient(colors: [const Color(0xFF43E97B).withOpacity(0.1), const Color(0xFF38F9D7).withOpacity(0.1)]),
+                                    gradient: LinearGradient(colors: [colors.greenGradient.first.withOpacity(0.1), colors.greenGradient.last.withOpacity(0.1)]),
                                     borderRadius: BorderRadius.circular(24),
                                   ),
                                   child: ShaderMask(
-                                    shaderCallback: (b) => const LinearGradient(colors: [Color(0xFF43E97B), Color(0xFF38F9D7)]).createShader(b),
+                                    shaderCallback: (b) => LinearGradient(colors: colors.greenGradient).createShader(b),
                                     child: const Icon(CupertinoIcons.money_dollar, size: 48, color: Colors.white),
                                   ),
                                 ),
                                 const SizedBox(height: 16),
                                 ShaderMask(
-                                  shaderCallback: (b) => const LinearGradient(colors: [Color(0xFF43E97B), Color(0xFF38F9D7)]).createShader(b),
+                                  shaderCallback: (b) => LinearGradient(colors: colors.greenGradient).createShader(b),
                                   child: Text(
                                     (_selectedYear != null || _selectedMonth != null)
                                         ? '该时间段暂无消费记录'
@@ -440,14 +442,15 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                             itemBuilder: (ctx, i) {
                               final filteredExpenses = _getFilteredExpenses(expenseState.expenses);
                               final expense = filteredExpenses[i];
-                              final catInfo = _getCategoryInfo(expense.category);
+                              final catColors = colors.categoryColors[expense.category] ?? colors.categoryColors['其他']!;
                               return _ExpenseTile(
                                 expense: expense,
-                                categoryIcon: catInfo['icon'] as IconData,
-                                categoryColors: catInfo['colors'] as List<Color>,
+                                categoryIcon: (_getCategoryInfo(expense.category)['icon'] as IconData),
+                                categoryColors: catColors,
                                 currencyFormat: currencyFormat,
                                 dateFormat: dateFormat,
                                 isDark: isDark,
+                                colors: colors,
                                 onDelete: () => ref.read(expenseProvider.notifier).deleteExpense(expense.id!),
                               );
                             },
@@ -458,11 +461,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                 padding: const EdgeInsets.all(20),
                 child: Container(
                   width: double.infinity,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [Color(0xFF43E97B), Color(0xFF38F9D7)]),
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [BoxShadow(color: const Color(0xFF43E97B).withOpacity(0.4), blurRadius: 15, offset: const Offset(0, 8))],
-                  ),
+                  decoration: colors.gradientDecoration(colors.greenGradient),
                   child: CupertinoButton(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     onPressed: _showAddExpenseSheet,
@@ -492,6 +491,7 @@ class _ExpenseTile extends StatelessWidget {
   final NumberFormat currencyFormat;
   final DateFormat dateFormat;
   final bool isDark;
+  final AppColors colors;
   final VoidCallback onDelete;
 
   const _ExpenseTile({
@@ -501,6 +501,7 @@ class _ExpenseTile extends StatelessWidget {
     required this.currencyFormat,
     required this.dateFormat,
     required this.isDark,
+    required this.colors,
     required this.onDelete,
   });
 
@@ -518,7 +519,7 @@ class _ExpenseTile extends StatelessWidget {
       background: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [Color(0xFFFF6B6B), Color(0xFFFF8E8E)]),
+          gradient: LinearGradient(colors: colors.redGradient),
           borderRadius: BorderRadius.circular(16),
         ),
         alignment: Alignment.centerRight,
@@ -536,7 +537,7 @@ class _ExpenseTile extends StatelessWidget {
             colors: cardBgColors,
           ),
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: categoryColors.first.withOpacity(isDark ? 0.05 : 0.12), blurRadius: 12, offset: const Offset(0, 4))],
+          boxShadow: [BoxShadow(color: categoryColors.first.withOpacity(colors.shadowOpacity * 0.3), blurRadius: 12, offset: const Offset(0, 4))],
         ),
         child: Row(
           children: [
@@ -545,7 +546,7 @@ class _ExpenseTile extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(colors: categoryColors),
                 borderRadius: BorderRadius.circular(13),
-                boxShadow: [BoxShadow(color: categoryColors.first.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 3))],
+                boxShadow: [BoxShadow(color: categoryColors.first.withOpacity(colors.shadowOpacity), blurRadius: 8, offset: const Offset(0, 3))],
               ),
               child: Icon(categoryIcon, color: Colors.white, size: 22),
             ),
@@ -567,7 +568,7 @@ class _ExpenseTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 ShaderMask(
-                  shaderCallback: (b) => const LinearGradient(colors: [Color(0xFFFF6B6B), Color(0xFFFF8E8E)]).createShader(b),
+                  shaderCallback: (b) => LinearGradient(colors: colors.redGradient).createShader(b),
                   child: Text('-${currencyFormat.format(expense.amount)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
                 ),
                 const SizedBox(height: 3),

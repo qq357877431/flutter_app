@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import '../config/colors.dart';
 import '../services/notification_service.dart';
 
 class WaterScreen extends StatefulWidget {
@@ -307,6 +308,7 @@ class _WaterScreenState extends State<WaterScreen> {
   Widget build(BuildContext context) {
     final progress = (_todayTotal / _dailyGoal).clamp(0.0, 1.0);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors(isDark);
     final bgColor = isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF2F2F7);
     final cardColor = isDark ? const Color(0xFF2C2C2E) : Colors.white;
     final textColor = isDark ? Colors.white : Colors.black;
@@ -322,7 +324,7 @@ class _WaterScreenState extends State<WaterScreen> {
         actions: [
           IconButton(
             icon: Icon(_reminderEnabled ? Icons.notifications_active : Icons.notifications_none,
-              color: _reminderEnabled ? const Color(0xFF007AFF) : secondaryTextColor),
+              color: _reminderEnabled ? colors.blue : secondaryTextColor),
             onPressed: _showReminderSettings,
           ),
         ],
@@ -334,13 +336,13 @@ class _WaterScreenState extends State<WaterScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF007AFF), Color(0xFF5AC8FA)],
+              gradient: LinearGradient(
+                colors: colors.blueGradient,
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [BoxShadow(color: const Color(0xFF007AFF).withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8))],
+              boxShadow: [BoxShadow(color: colors.blueGradient.first.withOpacity(colors.shadowOpacity), blurRadius: 15, offset: const Offset(0, 8))],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -407,7 +409,7 @@ class _WaterScreenState extends State<WaterScreen> {
                       if (i > 0) Divider(height: 1, indent: 16, endIndent: 16, color: isDark ? const Color(0xFF38383A) : null),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildRecordItem(i, isDark, textColor, secondaryTextColor),
+                        child: _buildRecordItem(i, isDark, textColor, secondaryTextColor, colors),
                       ),
                     ],
                   )),
@@ -442,7 +444,7 @@ class _WaterScreenState extends State<WaterScreen> {
     );
   }
 
-  Widget _buildRecordItem(int index, bool isDark, Color textColor, Color secondaryTextColor) {
+  Widget _buildRecordItem(int index, bool isDark, Color textColor, Color secondaryTextColor, AppColors colors) {
     final record = _records[index];
     final time = '${record.time.hour.toString().padLeft(2, '0')}:${record.time.minute.toString().padLeft(2, '0')}';
     return Dismissible(
@@ -468,7 +470,7 @@ class _WaterScreenState extends State<WaterScreen> {
         ),
         title: Text(record.type, style: TextStyle(color: textColor)),
         subtitle: Text(time, style: TextStyle(fontSize: 12, color: secondaryTextColor)),
-        trailing: Text('${record.amount} ml', style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF007AFF))),
+        trailing: Text('${record.amount} ml', style: TextStyle(fontWeight: FontWeight.w600, color: colors.blue)),
       ),
     );
   }

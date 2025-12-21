@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../config/colors.dart';
 import '../models/plan.dart';
 import '../providers/plan_provider.dart';
 
@@ -146,13 +147,11 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
     final planState = ref.watch(planProvider);
     final dateFormat = DateFormat('M月d日 EEEE', 'zh_CN');
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors(isDark);
     final bgColors = isDark 
         ? [const Color(0xFF1C1C1E), const Color(0xFF1C1C1E), const Color(0xFF1C1C1E)]
         : [const Color(0xFFF0F4FF), const Color(0xFFFAFBFF), Colors.white];
     final textColor = isDark ? Colors.white : Colors.grey[800];
-    final cardBgColors = isDark
-        ? [const Color(0xFF2C2C2E), const Color(0xFF2C2C2E)]
-        : [Colors.white, const Color(0xFFF8FAFF)];
 
     return CupertinoPageScaffold(
       child: Container(
@@ -173,15 +172,11 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     ShaderMask(
-                      shaderCallback: (b) => const LinearGradient(colors: [Color(0xFF667EEA), Color(0xFF764BA2)]).createShader(b),
+                      shaderCallback: (b) => LinearGradient(colors: colors.primaryGradient).createShader(b),
                       child: const Text('次日计划', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
                     ),
                     Container(
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(colors: [Color(0xFF667EEA), Color(0xFF764BA2)]),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [BoxShadow(color: const Color(0xFF667EEA).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 3))],
-                      ),
+                      decoration: colors.gradientDecoration(colors.primaryGradient, radius: 12),
                       child: CupertinoButton(
                         padding: const EdgeInsets.all(10),
                         minSize: 0,
@@ -198,13 +193,13 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
+                  gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+                    colors: colors.primaryGradient,
                   ),
                   borderRadius: BorderRadius.circular(18),
-                  boxShadow: [BoxShadow(color: const Color(0xFF667EEA).withOpacity(0.4), blurRadius: 20, offset: const Offset(0, 10))],
+                  boxShadow: [BoxShadow(color: colors.primaryGradient.first.withOpacity(colors.shadowOpacity), blurRadius: 20, offset: const Offset(0, 10))],
                 ),
                 child: Row(
                   children: [
@@ -238,21 +233,21 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(24),
                                   decoration: BoxDecoration(
-                                    gradient: LinearGradient(colors: [const Color(0xFF667EEA).withOpacity(0.1), const Color(0xFF764BA2).withOpacity(0.1)]),
+                                    gradient: LinearGradient(colors: [colors.primaryGradient.first.withOpacity(0.1), colors.primaryGradient.last.withOpacity(0.1)]),
                                     borderRadius: BorderRadius.circular(24),
                                   ),
                                   child: ShaderMask(
-                                    shaderCallback: (b) => const LinearGradient(colors: [Color(0xFF667EEA), Color(0xFF764BA2)]).createShader(b),
+                                    shaderCallback: (b) => LinearGradient(colors: colors.primaryGradient).createShader(b),
                                     child: const Icon(CupertinoIcons.doc_text, size: 48, color: Colors.white),
                                   ),
                                 ),
                                 const SizedBox(height: 16),
                                 ShaderMask(
-                                  shaderCallback: (b) => const LinearGradient(colors: [Color(0xFF667EEA), Color(0xFF764BA2)]).createShader(b),
+                                  shaderCallback: (b) => LinearGradient(colors: colors.primaryGradient).createShader(b),
                                   child: const Text('暂无计划', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.white)),
                                 ),
                                 const SizedBox(height: 6),
-                                Text('点击下方按钮添加', style: TextStyle(color: Colors.grey[500], fontSize: 14)),
+                                Text('点击下方按钮添加', style: TextStyle(color: isDark ? const Color(0xFF8E8E93) : Colors.grey[500], fontSize: 14)),
                               ],
                             ),
                           )
@@ -264,6 +259,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                               return _PlanTile(
                                 plan: plan,
                                 isDark: isDark,
+                                colors: colors,
                                 onToggle: () => ref.read(planProvider.notifier).togglePlanStatus(plan),
                                 onDelete: () => ref.read(planProvider.notifier).deletePlan(plan.id!),
                               );
@@ -275,11 +271,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                 padding: const EdgeInsets.all(20),
                 child: Container(
                   width: double.infinity,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [Color(0xFF667EEA), Color(0xFF764BA2)]),
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [BoxShadow(color: const Color(0xFF667EEA).withOpacity(0.4), blurRadius: 15, offset: const Offset(0, 8))],
-                  ),
+                  decoration: colors.gradientDecoration(colors.primaryGradient),
                   child: CupertinoButton(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     onPressed: _showAddPlanSheet,
@@ -305,10 +297,11 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
 class _PlanTile extends StatelessWidget {
   final Plan plan;
   final bool isDark;
+  final AppColors colors;
   final VoidCallback onToggle;
   final VoidCallback onDelete;
 
-  const _PlanTile({required this.plan, required this.isDark, required this.onToggle, required this.onDelete});
+  const _PlanTile({required this.plan, required this.isDark, required this.colors, required this.onToggle, required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -322,6 +315,8 @@ class _PlanTile extends StatelessWidget {
     final textColor = isDark 
         ? (plan.isCompleted ? const Color(0xFF8E8E93) : Colors.white)
         : (plan.isCompleted ? Colors.grey[500] : Colors.grey[800]);
+    final checkGradient = colors.greenGradient;
+    final borderColor = colors.primary;
     
     return Dismissible(
       key: Key(plan.id.toString()),
@@ -329,7 +324,7 @@ class _PlanTile extends StatelessWidget {
       background: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [Color(0xFFFF6B6B), Color(0xFFFF8E8E)]),
+          gradient: LinearGradient(colors: colors.redGradient),
           borderRadius: BorderRadius.circular(16),
         ),
         alignment: Alignment.centerRight,
@@ -348,7 +343,7 @@ class _PlanTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: (plan.isCompleted ? const Color(0xFF43E97B) : const Color(0xFF667EEA)).withOpacity(isDark ? 0.05 : 0.12),
+              color: (plan.isCompleted ? colors.green : colors.primary).withOpacity(colors.shadowOpacity * 0.3),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -368,11 +363,11 @@ class _PlanTile extends StatelessWidget {
                     child: Container(
                       width: 28, height: 28,
                       decoration: BoxDecoration(
-                        gradient: plan.isCompleted ? const LinearGradient(colors: [Color(0xFF43E97B), Color(0xFF38F9D7)]) : null,
+                        gradient: plan.isCompleted ? LinearGradient(colors: checkGradient) : null,
                         color: plan.isCompleted ? null : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: plan.isCompleted ? Colors.transparent : const Color(0xFF667EEA), width: 2),
-                        boxShadow: plan.isCompleted ? [BoxShadow(color: const Color(0xFF43E97B).withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 3))] : null,
+                        border: Border.all(color: plan.isCompleted ? Colors.transparent : borderColor, width: 2),
+                        boxShadow: plan.isCompleted ? [BoxShadow(color: checkGradient.first.withOpacity(colors.shadowOpacity), blurRadius: 8, offset: const Offset(0, 3))] : null,
                       ),
                       child: plan.isCompleted ? const Icon(CupertinoIcons.checkmark, size: 18, color: Colors.white) : null,
                     ),

@@ -1,7 +1,7 @@
 name: daily_planner
 description: 每日计划 - 计划、记账、喝水提醒
 publish_to: 'none'
-version: 1.3.1+8
+version: 1.3.2+9
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
