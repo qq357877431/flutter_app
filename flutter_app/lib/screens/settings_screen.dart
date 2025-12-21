@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
+import '../services/api_service.dart';
 import '../services/notification_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -232,14 +233,66 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(12)),
             child: Column(
               children: [
-                ListTile(
-                  leading: _icon(Icons.nightlight_round, const Color(0xFF5856D6)),
-                  title: const Text('早睡提醒'),
-                  subtitle: Text('每天 ${_formatTime(_bedtime)}'),
-                  trailing: Switch.adaptive(value: _bedtimeEnabled, onChanged: _toggleBedtime),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      _icon(Icons.nightlight_round, const Color(0xFF5856D6)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('早睡提醒', style: TextStyle(fontSize: 16, color: isDark ? Colors.white : Colors.black)),
+                            const SizedBox(height: 2),
+                            Text('每天 ${_formatTime(_bedtime)}', style: TextStyle(fontSize: 13, color: textSecondary)),
+                          ],
+                        ),
+                      ),
+                      // 美化的开关
+                      GestureDetector(
+                        onTap: () => _toggleBedtime(!_bedtimeEnabled),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: 52,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            gradient: _bedtimeEnabled 
+                                ? const LinearGradient(colors: [Color(0xFF5856D6), Color(0xFF7C3AED)])
+                                : null,
+                            color: _bedtimeEnabled ? null : (isDark ? const Color(0xFF48484A) : Colors.grey[300]),
+                          ),
+                          child: AnimatedAlign(
+                            duration: const Duration(milliseconds: 200),
+                            alignment: _bedtimeEnabled ? Alignment.centerRight : Alignment.centerLeft,
+                            child: Container(
+                              width: 28,
+                              height: 28,
+                              margin: const EdgeInsets.symmetric(horizontal: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: _bedtimeEnabled 
+                                  ? const Icon(Icons.check, size: 16, color: Color(0xFF5856D6))
+                                  : null,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 if (_bedtimeEnabled) ...[
-                  Divider(height: 1, indent: 56, color: isDark ? const Color(0xFF38383A) : null),
+                  Divider(height: 1, indent: 56, color: isDark ? const Color(0xFF38383A) : Colors.grey[200]),
                   ListTile(
                     leading: _icon(Icons.access_time, const Color(0xFF007AFF)),
                     title: const Text('提醒时间'),
@@ -260,15 +313,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           // 账户标题
           Padding(
             padding: const EdgeInsets.only(left: 16, bottom: 8),
-            child: Text('账户', style: TextStyle(fontSize: 13, color: textSecondary)),
+            child: Text('账户安全', style: TextStyle(fontSize: 13, color: textSecondary)),
           ),
           Container(
             decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(12)),
-            child: ListTile(
-              leading: _icon(Icons.logout, const Color(0xFFFF3B30)),
-              title: const Text('退出登录', style: TextStyle(color: Color(0xFFFF3B30))),
-              trailing: Icon(Icons.chevron_right, color: textSecondary),
-              onTap: _showLogoutDialog,
+            child: Column(
+              children: [
+                ListTile(
+                  leading: _icon(Icons.lock_outline, const Color(0xFF007AFF)),
+                  title: const Text('修改密码'),
+                  trailing: Icon(Icons.chevron_right, color: textSecondary),
+                  onTap: _showChangePasswordSheet,
+                ),
+                Divider(height: 1, indent: 56, color: isDark ? const Color(0xFF38383A) : Colors.grey[200]),
+                ListTile(
+                  leading: _icon(Icons.logout, const Color(0xFFFF3B30)),
+                  title: const Text('退出登录', style: TextStyle(color: Color(0xFFFF3B30))),
+                  trailing: Icon(Icons.chevron_right, color: textSecondary),
+                  onTap: _showLogoutDialog,
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 24),
@@ -282,10 +346,156 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: ListTile(
               leading: _icon(Icons.info_outline, const Color(0xFF007AFF)),
               title: const Text('版本'),
-              trailing: Text('1.2.0', style: TextStyle(color: textSecondary)),
+              trailing: Text('1.3.2', style: TextStyle(color: textSecondary)),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showChangePasswordSheet() {
+    final oldPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    bool isLoading = false;
+    String? errorMessage;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF2C2C2E) : Colors.white;
+    final inputBgColor = isDark ? const Color(0xFF3A3A3C) : Colors.grey[100];
+    final textColor = isDark ? Colors.white : Colors.black;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[400],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text('修改密码', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor)),
+                const SizedBox(height: 20),
+                
+                CupertinoTextField(
+                  controller: oldPasswordController,
+                  placeholder: '当前密码',
+                  obscureText: true,
+                  padding: const EdgeInsets.all(14),
+                  style: TextStyle(color: textColor),
+                  placeholderStyle: TextStyle(color: isDark ? const Color(0xFF8E8E93) : Colors.grey),
+                  decoration: BoxDecoration(
+                    color: inputBgColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                CupertinoTextField(
+                  controller: newPasswordController,
+                  placeholder: '新密码（至少6位）',
+                  obscureText: true,
+                  padding: const EdgeInsets.all(14),
+                  style: TextStyle(color: textColor),
+                  placeholderStyle: TextStyle(color: isDark ? const Color(0xFF8E8E93) : Colors.grey),
+                  decoration: BoxDecoration(
+                    color: inputBgColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                CupertinoTextField(
+                  controller: confirmPasswordController,
+                  placeholder: '确认新密码',
+                  obscureText: true,
+                  padding: const EdgeInsets.all(14),
+                  style: TextStyle(color: textColor),
+                  placeholderStyle: TextStyle(color: isDark ? const Color(0xFF8E8E93) : Colors.grey),
+                  decoration: BoxDecoration(
+                    color: inputBgColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                
+                if (errorMessage != null) ...[
+                  const SizedBox(height: 12),
+                  Text(errorMessage!, style: const TextStyle(color: Color(0xFFFF3B30), fontSize: 14)),
+                ],
+                
+                const SizedBox(height: 20),
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [Color(0xFF007AFF), Color(0xFF5AC8FA)]),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: CupertinoButton(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    onPressed: isLoading ? null : () async {
+                      // 验证
+                      if (oldPasswordController.text.isEmpty) {
+                        setS(() => errorMessage = '请输入当前密码');
+                        return;
+                      }
+                      if (newPasswordController.text.length < 6) {
+                        setS(() => errorMessage = '新密码至少6位');
+                        return;
+                      }
+                      if (newPasswordController.text != confirmPasswordController.text) {
+                        setS(() => errorMessage = '两次密码不一致');
+                        return;
+                      }
+                      
+                      setS(() {
+                        isLoading = true;
+                        errorMessage = null;
+                      });
+                      
+                      try {
+                        await ApiService().changePassword(
+                          oldPasswordController.text,
+                          newPasswordController.text,
+                        );
+                        if (ctx.mounted) {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('密码修改成功'), backgroundColor: Color(0xFF34C759)),
+                          );
+                        }
+                      } catch (e) {
+                        setS(() {
+                          isLoading = false;
+                          errorMessage = '当前密码错误';
+                        });
+                      }
+                    },
+                    child: isLoading
+                        ? const CupertinoActivityIndicator(color: Colors.white)
+                        : const Text('确认修改', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+                SizedBox(height: MediaQuery.of(ctx).padding.bottom + 10),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

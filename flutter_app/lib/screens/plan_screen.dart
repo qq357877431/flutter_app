@@ -173,7 +173,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                   children: [
                     ShaderMask(
                       shaderCallback: (b) => LinearGradient(colors: colors.primaryGradient).createShader(b),
-                      child: const Text('次日计划', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
+                      child: const Text('每日计划', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
                     ),
                     Container(
                       decoration: colors.gradientDecoration(colors.primaryGradient, radius: 12),

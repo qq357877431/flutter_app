@@ -43,6 +43,7 @@ func main() {
 		// 用户信息
 		api.GET("/user/profile", handlers.GetProfile)
 		api.PUT("/user/profile", handlers.UpdateProfile)
+		api.PUT("/user/password", handlers.ChangePassword)
 
 		// Plans
 		api.GET("/plans", handlers.GetPlans)

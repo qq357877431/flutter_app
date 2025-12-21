@@ -104,6 +104,14 @@ class ApiService {
     return _dio.put('/user/profile', data: data);
   }
 
+  // 修改密码
+  Future<Response> changePassword(String oldPassword, String newPassword) async {
+    return _dio.put('/user/password', data: {
+      'old_password': oldPassword,
+      'new_password': newPassword,
+    });
+  }
+
   // Plans
   Future<Response> getPlans({String? date}) async {
     return _dio.get('/plans', queryParameters: date != null ? {'date': date} : null);
