@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/auth_provider.dart';
 import '../services/notification_service.dart';
 
@@ -19,11 +20,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void initState() {
     super.initState();
     _initNotifications();
+    _loadBedtimeSettings();
   }
 
   Future<void> _initNotifications() async {
     await _notificationService.initialize();
     await _notificationService.requestPermissions();
+  }
+
+  // 加载早睡提醒设置
+  Future<void> _loadBedtimeSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _bedtimeEnabled = prefs.getBool('bedtime_enabled') ?? false;
+      final hour = prefs.getInt('bedtime_hour') ?? 23;
+      final minute = prefs.getInt('bedtime_minute') ?? 0;
+      _bedtime = TimeOfDay(hour: hour, minute: minute);
+    });
+    
+    // 如果启用了提醒，重新设置
+    if (_bedtimeEnabled) {
+      await _notificationService.scheduleBedtimeReminder(hour: _bedtime.hour, minute: _bedtime.minute);
+    }
+  }
+
+  // 保存早睡提醒设置
+  Future<void> _saveBedtimeSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('bedtime_enabled', _bedtimeEnabled);
+    await prefs.setInt('bedtime_hour', _bedtime.hour);
+    await prefs.setInt('bedtime_minute', _bedtime.minute);
   }
 
   String _formatTime(TimeOfDay time) {
@@ -44,12 +70,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 CupertinoButton(child: const Text('取消'), onPressed: () => Navigator.pop(ctx)),
-                CupertinoButton(child: const Text('确定'), onPressed: () {
+                CupertinoButton(child: const Text('确定'), onPressed: () async {
                   setState(() => _bedtime = TimeOfDay(hour: tempH, minute: tempM));
                   Navigator.pop(ctx);
                   if (_bedtimeEnabled) {
-                    _notificationService.scheduleBedtimeReminder(hour: tempH, minute: tempM);
+                    await _notificationService.scheduleBedtimeReminder(hour: tempH, minute: tempM);
                   }
+                  await _saveBedtimeSettings();
                 }),
               ],
             ),
@@ -77,6 +104,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     } else {
       await _notificationService.cancelNotification(1000);
     }
+    await _saveBedtimeSettings();
   }
 
   @override
@@ -152,7 +180,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: ListTile(
               leading: _icon(Icons.info_outline, const Color(0xFF007AFF)),
               title: const Text('版本'),
-              trailing: Text('1.0.0', style: TextStyle(color: Colors.grey[600])),
+              trailing: Text('1.1.0', style: TextStyle(color: Colors.grey[600])),
             ),
           ),
         ],
