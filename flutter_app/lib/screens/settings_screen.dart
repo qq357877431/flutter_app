@@ -174,7 +174,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: ListTile(
               leading: _icon(Icons.info_outline, const Color(0xFF007AFF)),
               title: const Text('版本'),
-              trailing: Text('1.1.1', style: TextStyle(color: Colors.grey[600])),
+              trailing: Text('1.1.2', style: TextStyle(color: Colors.grey[600])),
             ),
           ),
         ],

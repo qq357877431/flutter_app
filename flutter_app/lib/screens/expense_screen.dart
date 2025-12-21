@@ -13,6 +13,9 @@ class ExpenseScreen extends ConsumerStatefulWidget {
 }
 
 class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
+  int? _selectedYear;
+  int? _selectedMonth;
+  
   final _categories = [
     {'name': '餐饮', 'icon': CupertinoIcons.cart_fill, 'colors': [const Color(0xFFFF9500), const Color(0xFFFFB347)]},
     {'name': '交通', 'icon': CupertinoIcons.car_fill, 'colors': [const Color(0xFF4FACFE), const Color(0xFF00F2FE)]},
@@ -28,6 +31,109 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
   }
 
   Map<String, dynamic> _getCategoryInfo(String name) => _categories.firstWhere((c) => c['name'] == name, orElse: () => _categories.last);
+
+  // 获取筛选后的消费记录
+  List<Expense> _getFilteredExpenses(List<Expense> expenses) {
+    if (_selectedYear == null && _selectedMonth == null) {
+      return expenses;
+    }
+    return expenses.where((e) {
+      if (_selectedYear != null && e.createdAt.year != _selectedYear) return false;
+      if (_selectedMonth != null && e.createdAt.month != _selectedMonth) return false;
+      return true;
+    }).toList();
+  }
+
+  // 计算筛选后的总额
+  double _getFilteredTotal(List<Expense> expenses) {
+    return _getFilteredExpenses(expenses).fold(0.0, (sum, e) => sum + e.amount);
+  }
+
+  // 显示年月选择器
+  void _showDateFilter() {
+    final now = DateTime.now();
+    int tempYear = _selectedYear ?? now.year;
+    int tempMonth = _selectedMonth ?? now.month;
+    
+    showCupertinoModalPopup(
+      context: context,
+      builder: (ctx) => Container(
+        height: 320,
+        color: CupertinoColors.systemBackground.resolveFrom(ctx),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                CupertinoButton(
+                  child: const Text('取消'),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+                CupertinoButton(
+                  child: const Text('重置', style: TextStyle(color: Colors.orange)),
+                  onPressed: () {
+                    setState(() {
+                      _selectedYear = null;
+                      _selectedMonth = null;
+                    });
+                    Navigator.pop(ctx);
+                  },
+                ),
+                CupertinoButton(
+                  child: const Text('确定'),
+                  onPressed: () {
+                    setState(() {
+                      _selectedYear = tempYear;
+                      _selectedMonth = tempMonth;
+                    });
+                    Navigator.pop(ctx);
+                  },
+                ),
+              ],
+            ),
+            Expanded(
+              child: Row(
+                children: [
+                  // 年份选择
+                  Expanded(
+                    child: CupertinoPicker(
+                      itemExtent: 40,
+                      scrollController: FixedExtentScrollController(
+                        initialItem: tempYear - 2020,
+                      ),
+                      onSelectedItemChanged: (index) {
+                        tempYear = 2020 + index;
+                      },
+                      children: List.generate(
+                        now.year - 2020 + 2,
+                        (i) => Center(child: Text('${2020 + i}年')),
+                      ),
+                    ),
+                  ),
+                  // 月份选择
+                  Expanded(
+                    child: CupertinoPicker(
+                      itemExtent: 40,
+                      scrollController: FixedExtentScrollController(
+                        initialItem: tempMonth - 1,
+                      ),
+                      onSelectedItemChanged: (index) {
+                        tempMonth = index + 1;
+                      },
+                      children: List.generate(
+                        12,
+                        (i) => Center(child: Text('${i + 1}月')),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   void _showAddExpenseSheet() {
     final amountController = TextEditingController();
@@ -180,6 +286,50 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                       shaderCallback: (b) => const LinearGradient(colors: [Color(0xFF43E97B), Color(0xFF38F9D7)]).createShader(b),
                       child: const Text('消费记录', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
                     ),
+                    const Spacer(),
+                    // 筛选按钮
+                    GestureDetector(
+                      onTap: _showDateFilter,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: (_selectedYear != null || _selectedMonth != null) 
+                              ? const Color(0xFF43E97B).withOpacity(0.15)
+                              : Colors.grey.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: (_selectedYear != null || _selectedMonth != null)
+                              ? Border.all(color: const Color(0xFF43E97B), width: 1)
+                              : null,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              CupertinoIcons.calendar,
+                              size: 16,
+                              color: (_selectedYear != null || _selectedMonth != null)
+                                  ? const Color(0xFF43E97B)
+                                  : Colors.grey[600],
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              (_selectedYear != null && _selectedMonth != null)
+                                  ? '$_selectedYear年$_selectedMonth月'
+                                  : '筛选',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: (_selectedYear != null || _selectedMonth != null)
+                                    ? const Color(0xFF43E97B)
+                                    : Colors.grey[600],
+                                fontWeight: (_selectedYear != null || _selectedMonth != null)
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -208,13 +358,28 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                           child: const Icon(CupertinoIcons.money_dollar_circle_fill, color: Colors.white, size: 22),
                         ),
                         const SizedBox(width: 12),
-                        Text('总支出', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 16)),
+                        Text(
+                          (_selectedYear != null && _selectedMonth != null)
+                              ? '$_selectedYear年$_selectedMonth月支出'
+                              : '总支出',
+                          style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 16),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 14),
-                    Text(currencyFormat.format(expenseState.total), style: const TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.bold, letterSpacing: -1)),
+                    Text(
+                      currencyFormat.format(
+                        (_selectedYear != null || _selectedMonth != null)
+                            ? _getFilteredTotal(expenseState.expenses)
+                            : expenseState.total
+                      ),
+                      style: const TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.bold, letterSpacing: -1),
+                    ),
                     const SizedBox(height: 6),
-                    Text('共 ${expenseState.expenses.length} 笔消费', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14)),
+                    Text(
+                      '共 ${_getFilteredExpenses(expenseState.expenses).length} 笔消费',
+                      style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+                    ),
                   ],
                 ),
               ),
@@ -236,7 +401,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
               Expanded(
                 child: expenseState.isLoading
                     ? const Center(child: CupertinoActivityIndicator())
-                    : expenseState.expenses.isEmpty
+                    : _getFilteredExpenses(expenseState.expenses).isEmpty
                         ? Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -255,16 +420,22 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                                 const SizedBox(height: 16),
                                 ShaderMask(
                                   shaderCallback: (b) => const LinearGradient(colors: [Color(0xFF43E97B), Color(0xFF38F9D7)]).createShader(b),
-                                  child: const Text('暂无消费记录', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.white)),
+                                  child: Text(
+                                    (_selectedYear != null || _selectedMonth != null)
+                                        ? '该时间段暂无消费记录'
+                                        : '暂无消费记录',
+                                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.white),
+                                  ),
                                 ),
                               ],
                             ),
                           )
                         : ListView.builder(
                             padding: const EdgeInsets.symmetric(horizontal: 20),
-                            itemCount: expenseState.expenses.length,
+                            itemCount: _getFilteredExpenses(expenseState.expenses).length,
                             itemBuilder: (ctx, i) {
-                              final expense = expenseState.expenses[i];
+                              final filteredExpenses = _getFilteredExpenses(expenseState.expenses);
+                              final expense = filteredExpenses[i];
                               final catInfo = _getCategoryInfo(expense.category);
                               return _ExpenseTile(
                                 expense: expense,
