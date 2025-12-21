@@ -19,13 +19,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _initNotifications();
     _loadBedtimeSettings();
-  }
-
-  Future<void> _initNotifications() async {
-    await _notificationService.initialize();
-    await _notificationService.requestPermissions();
   }
 
   // 加载早睡提醒设置
@@ -180,7 +174,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: ListTile(
               leading: _icon(Icons.info_outline, const Color(0xFF007AFF)),
               title: const Text('版本'),
-              trailing: Text('1.1.0', style: TextStyle(color: Colors.grey[600])),
+              trailing: Text('1.1.1', style: TextStyle(color: Colors.grey[600])),
             ),
           ),
         ],
