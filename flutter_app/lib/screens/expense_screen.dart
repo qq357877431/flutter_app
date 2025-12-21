@@ -264,14 +264,18 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
     final expenseState = ref.watch(expenseProvider);
     final currencyFormat = NumberFormat.currency(locale: 'zh_CN', symbol: '¥');
     final dateFormat = DateFormat('MM/dd HH:mm');
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColors = isDark 
+        ? [const Color(0xFF1C1C1E), const Color(0xFF1C1C1E), const Color(0xFF1C1C1E)]
+        : [const Color(0xFFE8F5E9), const Color(0xFFF0FFF4), Colors.white];
 
     return CupertinoPageScaffold(
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFE8F5E9), Color(0xFFF0FFF4), Colors.white],
+            colors: bgColors,
           ),
         ),
         child: SafeArea(
@@ -443,6 +447,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                                 categoryColors: catInfo['colors'] as List<Color>,
                                 currencyFormat: currencyFormat,
                                 dateFormat: dateFormat,
+                                isDark: isDark,
                                 onDelete: () => ref.read(expenseProvider.notifier).deleteExpense(expense.id!),
                               );
                             },
@@ -486,6 +491,7 @@ class _ExpenseTile extends StatelessWidget {
   final List<Color> categoryColors;
   final NumberFormat currencyFormat;
   final DateFormat dateFormat;
+  final bool isDark;
   final VoidCallback onDelete;
 
   const _ExpenseTile({
@@ -494,11 +500,18 @@ class _ExpenseTile extends StatelessWidget {
     required this.categoryColors,
     required this.currencyFormat,
     required this.dateFormat,
+    required this.isDark,
     required this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
+    final cardBgColors = isDark
+        ? [const Color(0xFF2C2C2E), const Color(0xFF2C2C2E)]
+        : [Colors.white, const Color(0xFFF8FAFF)];
+    final textColor = isDark ? Colors.white : Colors.black;
+    final secondaryTextColor = isDark ? const Color(0xFF8E8E93) : Colors.grey[500];
+    
     return Dismissible(
       key: Key(expense.id.toString()),
       direction: DismissDirection.endToStart,
@@ -517,13 +530,13 @@ class _ExpenseTile extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Colors.white, Color(0xFFF8FAFF)],
+            colors: cardBgColors,
           ),
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: categoryColors.first.withOpacity(0.12), blurRadius: 12, offset: const Offset(0, 4))],
+          boxShadow: [BoxShadow(color: categoryColors.first.withOpacity(isDark ? 0.05 : 0.12), blurRadius: 12, offset: const Offset(0, 4))],
         ),
         child: Row(
           children: [
@@ -541,11 +554,11 @@ class _ExpenseTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(expense.category, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                  Text(expense.category, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: textColor)),
                   if (expense.note != null && expense.note!.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 3),
-                      child: Text(expense.note!, style: TextStyle(color: Colors.grey[500], fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      child: Text(expense.note!, style: TextStyle(color: secondaryTextColor, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
                     ),
                 ],
               ),
@@ -558,7 +571,7 @@ class _ExpenseTile extends StatelessWidget {
                   child: Text('-${currencyFormat.format(expense.amount)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
                 ),
                 const SizedBox(height: 3),
-                Text(dateFormat.format(expense.createdAt), style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+                Text(dateFormat.format(expense.createdAt), style: TextStyle(color: secondaryTextColor, fontSize: 12)),
               ],
             ),
           ],

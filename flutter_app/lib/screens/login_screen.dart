@@ -102,14 +102,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColors = isDark 
+        ? [const Color(0xFF1C1C1E), const Color(0xFF1C1C1E), const Color(0xFF1C1C1E)]
+        : [const Color(0xFFF0F4FF), const Color(0xFFE8F0FE), const Color(0xFFF5E6FF)];
+    final cardColor = isDark ? const Color(0xFF2C2C2E) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black;
+    final secondaryTextColor = isDark ? const Color(0xFF8E8E93) : Colors.grey[600];
 
     return CupertinoPageScaffold(
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFFF0F4FF), Color(0xFFE8F0FE), Color(0xFFF5E6FF)],
+            colors: bgColors,
           ),
         ),
         child: SafeArea(
@@ -133,7 +140,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: 8),
                   Text(
                     '规划生活，记录点滴',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 15),
+                    style: TextStyle(color: secondaryTextColor, fontSize: 15),
                   ),
                   const SizedBox(height: 40),
                   
@@ -144,6 +151,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       placeholder: '用户名 / 手机号',
                       icon: CupertinoIcons.person_fill,
                       error: _accountError,
+                      isDark: isDark,
+                      cardColor: cardColor,
                     ),
                     const SizedBox(height: 16),
                     _buildInputField(
@@ -152,9 +161,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       icon: CupertinoIcons.lock_fill,
                       obscureText: _obscurePassword,
                       error: _passwordError,
+                      isDark: isDark,
+                      cardColor: cardColor,
                       suffix: _buildEyeButton(_obscurePassword, () {
                         setState(() => _obscurePassword = !_obscurePassword);
-                      }),
+                      }, isDark),
                     ),
                   ] else ...[
                     // 注册表单
@@ -163,6 +174,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       placeholder: '用户名（登录用）',
                       icon: CupertinoIcons.person_fill,
                       error: _usernameError,
+                      isDark: isDark,
+                      cardColor: cardColor,
                     ),
                     const SizedBox(height: 16),
                     _buildInputField(
@@ -172,6 +185,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       keyboardType: TextInputType.phone,
                       error: _phoneError,
                       maxLength: 11,
+                      isDark: isDark,
+                      cardColor: cardColor,
                     ),
                     const SizedBox(height: 16),
                     _buildInputField(
@@ -180,9 +195,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       icon: CupertinoIcons.lock_fill,
                       obscureText: _obscurePassword,
                       error: _passwordError,
+                      isDark: isDark,
+                      cardColor: cardColor,
                       suffix: _buildEyeButton(_obscurePassword, () {
                         setState(() => _obscurePassword = !_obscurePassword);
-                      }),
+                      }, isDark),
                     ),
                     const SizedBox(height: 16),
                     _buildInputField(
@@ -191,9 +208,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       icon: CupertinoIcons.lock_fill,
                       obscureText: _obscureConfirmPassword,
                       error: _confirmPasswordError,
+                      isDark: isDark,
+                      cardColor: cardColor,
                       suffix: _buildEyeButton(_obscureConfirmPassword, () {
                         setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
-                      }),
+                      }, isDark),
                     ),
                   ],
                   
@@ -249,9 +268,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     onPressed: _switchMode,
                     child: RichText(
                       text: TextSpan(
-                        style: TextStyle(color: Colors.grey[600], fontSize: 15),
+                        style: TextStyle(color: secondaryTextColor, fontSize: 15),
                         children: [
                           TextSpan(text: _isLogin ? '没有账号？' : '已有账号？'),
+                          const TextSpan(
+                            text: '',
+                          ),
                           TextSpan(
                             text: _isLogin ? '立即注册' : '立即登录',
                             style: const TextStyle(color: Color(0xFF667EEA), fontWeight: FontWeight.w600),
@@ -269,14 +291,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  Widget _buildEyeButton(bool obscure, VoidCallback onTap) {
+  Widget _buildEyeButton(bool obscure, VoidCallback onTap, bool isDark) {
     return GestureDetector(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.only(right: 12),
         child: Icon(
           obscure ? CupertinoIcons.eye : CupertinoIcons.eye_slash,
-          color: Colors.grey[500],
+          color: isDark ? const Color(0xFF8E8E93) : Colors.grey[500],
           size: 20,
         ),
       ),
@@ -328,22 +350,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     String? error,
     Widget? suffix,
     int? maxLength,
+    required bool isDark,
+    required Color cardColor,
   }) {
+    final textColor = isDark ? Colors.white : Colors.black;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: cardColor,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
-              BoxShadow(color: const Color(0xFF667EEA).withOpacity(0.08), blurRadius: 15, offset: const Offset(0, 5)),
+              BoxShadow(color: const Color(0xFF667EEA).withOpacity(isDark ? 0.05 : 0.08), blurRadius: 15, offset: const Offset(0, 5)),
             ],
             border: error != null ? Border.all(color: const Color(0xFFFF6B6B), width: 1.5) : null,
           ),
           child: CupertinoTextField(
             controller: controller,
             placeholder: placeholder,
+            placeholderStyle: TextStyle(color: isDark ? const Color(0xFF8E8E93) : Colors.grey[400]),
             prefix: Padding(
               padding: const EdgeInsets.only(left: 14),
               child: ShaderMask(
@@ -356,8 +383,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             keyboardType: keyboardType,
             obscureText: obscureText,
             maxLength: maxLength,
-            style: const TextStyle(fontSize: 16),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+            style: TextStyle(fontSize: 16, color: textColor),
+            decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(16)),
           ),
         ),
         if (error != null)

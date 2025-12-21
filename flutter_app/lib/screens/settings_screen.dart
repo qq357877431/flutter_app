@@ -442,69 +442,128 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   void _showThemePicker() {
     final currentMode = ref.read(themeModeProvider);
-    showCupertinoModalPopup(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF2C2C2E) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black;
+    
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => CupertinoActionSheet(
-        title: const Text('选择主题模式'),
-        actions: [
-          CupertinoActionSheetAction(
-            onPressed: () {
-              ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.light);
-              Navigator.pop(ctx);
-            },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.light_mode, size: 20),
-                const SizedBox(width: 8),
-                const Text('浅色'),
-                if (currentMode == ThemeMode.light) ...[
-                  const SizedBox(width: 8),
-                  const Icon(Icons.check, color: Color(0xFF007AFF), size: 20),
-                ],
-              ],
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[400],
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
-          CupertinoActionSheetAction(
-            onPressed: () {
-              ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.dark);
-              Navigator.pop(ctx);
-            },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.dark_mode, size: 20),
-                const SizedBox(width: 8),
-                const Text('深色'),
-                if (currentMode == ThemeMode.dark) ...[
-                  const SizedBox(width: 8),
-                  const Icon(Icons.check, color: Color(0xFF007AFF), size: 20),
-                ],
-              ],
+            const SizedBox(height: 20),
+            Text('选择主题', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
+            const SizedBox(height: 20),
+            _buildThemeOption(
+              ctx,
+              icon: Icons.light_mode_rounded,
+              title: '浅色模式',
+              subtitle: '始终使用浅色主题',
+              isSelected: currentMode == ThemeMode.light,
+              onTap: () {
+                ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.light);
+                Navigator.pop(ctx);
+              },
+              isDark: isDark,
             ),
-          ),
-          CupertinoActionSheetAction(
-            onPressed: () {
-              ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.system);
-              Navigator.pop(ctx);
-            },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.settings_suggest, size: 20),
-                const SizedBox(width: 8),
-                const Text('跟随系统'),
-                if (currentMode == ThemeMode.system) ...[
-                  const SizedBox(width: 8),
-                  const Icon(Icons.check, color: Color(0xFF007AFF), size: 20),
-                ],
-              ],
+            const SizedBox(height: 12),
+            _buildThemeOption(
+              ctx,
+              icon: Icons.dark_mode_rounded,
+              title: '深色模式',
+              subtitle: '始终使用深色主题',
+              isSelected: currentMode == ThemeMode.dark,
+              onTap: () {
+                ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.dark);
+                Navigator.pop(ctx);
+              },
+              isDark: isDark,
             ),
-          ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.pop(ctx),
-          child: const Text('取消'),
+            const SizedBox(height: 12),
+            _buildThemeOption(
+              ctx,
+              icon: Icons.brightness_auto_rounded,
+              title: '跟随系统',
+              subtitle: '自动适应系统主题设置',
+              isSelected: currentMode == ThemeMode.system,
+              onTap: () {
+                ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.system);
+                Navigator.pop(ctx);
+              },
+              isDark: isDark,
+            ),
+            SizedBox(height: MediaQuery.of(ctx).padding.bottom + 10),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeOption(
+    BuildContext ctx, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    final selectedColor = const Color(0xFF007AFF);
+    final bgColor = isSelected 
+        ? selectedColor.withOpacity(0.1)
+        : (isDark ? const Color(0xFF3A3A3C) : Colors.grey[100]);
+    final textColor = isDark ? Colors.white : Colors.black;
+    final subtitleColor = isDark ? const Color(0xFF8E8E93) : Colors.grey[600];
+    
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(14),
+          border: isSelected ? Border.all(color: selectedColor, width: 2) : null,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: isSelected ? selectedColor : (isDark ? const Color(0xFF48484A) : Colors.grey[200]),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.grey[600]), size: 24),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textColor)),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: TextStyle(fontSize: 13, color: subtitleColor)),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Icon(Icons.check_circle_rounded, color: selectedColor, size: 24),
+          ],
         ),
       ),
     );

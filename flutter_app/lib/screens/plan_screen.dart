@@ -145,14 +145,22 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
   Widget build(BuildContext context) {
     final planState = ref.watch(planProvider);
     final dateFormat = DateFormat('M月d日 EEEE', 'zh_CN');
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColors = isDark 
+        ? [const Color(0xFF1C1C1E), const Color(0xFF1C1C1E), const Color(0xFF1C1C1E)]
+        : [const Color(0xFFF0F4FF), const Color(0xFFFAFBFF), Colors.white];
+    final textColor = isDark ? Colors.white : Colors.grey[800];
+    final cardBgColors = isDark
+        ? [const Color(0xFF2C2C2E), const Color(0xFF2C2C2E)]
+        : [Colors.white, const Color(0xFFF8FAFF)];
 
     return CupertinoPageScaffold(
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFF0F4FF), Color(0xFFFAFBFF), Colors.white],
+            colors: bgColors,
           ),
         ),
         child: SafeArea(
@@ -255,6 +263,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                               final plan = planState.plans[i];
                               return _PlanTile(
                                 plan: plan,
+                                isDark: isDark,
                                 onToggle: () => ref.read(planProvider.notifier).togglePlanStatus(plan),
                                 onDelete: () => ref.read(planProvider.notifier).deletePlan(plan.id!),
                               );
@@ -295,13 +304,25 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
 
 class _PlanTile extends StatelessWidget {
   final Plan plan;
+  final bool isDark;
   final VoidCallback onToggle;
   final VoidCallback onDelete;
 
-  const _PlanTile({required this.plan, required this.onToggle, required this.onDelete});
+  const _PlanTile({required this.plan, required this.isDark, required this.onToggle, required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
+    final cardBgColors = isDark
+        ? (plan.isCompleted 
+            ? [const Color(0xFF1E3A2F), const Color(0xFF1E3A2F)]
+            : [const Color(0xFF2C2C2E), const Color(0xFF2C2C2E)])
+        : (plan.isCompleted
+            ? [const Color(0xFFE8F5E9), const Color(0xFFC8E6C9)]
+            : [Colors.white, const Color(0xFFF8FAFF)]);
+    final textColor = isDark 
+        ? (plan.isCompleted ? const Color(0xFF8E8E93) : Colors.white)
+        : (plan.isCompleted ? Colors.grey[500] : Colors.grey[800]);
+    
     return Dismissible(
       key: Key(plan.id.toString()),
       direction: DismissDirection.endToStart,
@@ -322,14 +343,12 @@ class _PlanTile extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: plan.isCompleted
-                ? [const Color(0xFFE8F5E9), const Color(0xFFC8E6C9)]
-                : [Colors.white, const Color(0xFFF8FAFF)],
+            colors: cardBgColors,
           ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: (plan.isCompleted ? const Color(0xFF43E97B) : const Color(0xFF667EEA)).withOpacity(0.12),
+              color: (plan.isCompleted ? const Color(0xFF43E97B) : const Color(0xFF667EEA)).withOpacity(isDark ? 0.05 : 0.12),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -366,7 +385,7 @@ class _PlanTile extends StatelessWidget {
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                         decoration: plan.isCompleted ? TextDecoration.lineThrough : null,
-                        color: plan.isCompleted ? Colors.grey[500] : Colors.grey[800],
+                        color: textColor,
                       ),
                     ),
                   ),

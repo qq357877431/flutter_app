@@ -306,8 +306,14 @@ class _WaterScreenState extends State<WaterScreen> {
   @override
   Widget build(BuildContext context) {
     final progress = (_todayTotal / _dailyGoal).clamp(0.0, 1.0);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF2F2F7);
+    final cardColor = isDark ? const Color(0xFF2C2C2E) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black;
+    final secondaryTextColor = isDark ? const Color(0xFF8E8E93) : Colors.grey;
+    
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F7),
+      backgroundColor: bgColor,
       appBar: AppBar(
         title: const Text('喝水记录', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
@@ -316,7 +322,7 @@ class _WaterScreenState extends State<WaterScreen> {
         actions: [
           IconButton(
             icon: Icon(_reminderEnabled ? Icons.notifications_active : Icons.notifications_none,
-              color: _reminderEnabled ? const Color(0xFF007AFF) : Colors.grey),
+              color: _reminderEnabled ? const Color(0xFF007AFF) : secondaryTextColor),
             onPressed: _showReminderSettings,
           ),
         ],
@@ -369,39 +375,39 @@ class _WaterScreenState extends State<WaterScreen> {
           ),
           const SizedBox(height: 20),
           // 快速添加
-          const Text('快速添加', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          Text('快速添加', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textColor)),
           const SizedBox(height: 12),
           Wrap(
             spacing: 12,
             runSpacing: 12,
-            children: _drinkTypes.map((type) => _buildDrinkButton(type)).toList(),
+            children: _drinkTypes.map((type) => _buildDrinkButton(type, isDark)).toList(),
           ),
           const SizedBox(height: 20),
           // 今日记录
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: cardColor,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text('今日记录', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text('今日记录', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textColor)),
                 ),
                 if (_records.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(child: Text('还没有记录，点击上方添加', style: TextStyle(color: Colors.grey))),
+                  Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Center(child: Text('还没有记录，点击上方添加', style: TextStyle(color: secondaryTextColor))),
                   )
                 else
                   ...List.generate(_records.length, (i) => Column(
                     children: [
-                      if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
+                      if (i > 0) Divider(height: 1, indent: 16, endIndent: 16, color: isDark ? const Color(0xFF38383A) : null),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildRecordItem(i),
+                        child: _buildRecordItem(i, isDark, textColor, secondaryTextColor),
                       ),
                     ],
                   )),
@@ -414,14 +420,14 @@ class _WaterScreenState extends State<WaterScreen> {
     );
   }
 
-  Widget _buildDrinkButton(DrinkType type) {
+  Widget _buildDrinkButton(DrinkType type, bool isDark) {
     return GestureDetector(
       onTap: () => _showAddDialog(type),
       child: Container(
         width: 72,
         height: 72,
         decoration: BoxDecoration(
-          color: type.color.withOpacity(0.1),
+          color: type.color.withOpacity(isDark ? 0.2 : 0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -436,7 +442,7 @@ class _WaterScreenState extends State<WaterScreen> {
     );
   }
 
-  Widget _buildRecordItem(int index) {
+  Widget _buildRecordItem(int index, bool isDark, Color textColor, Color secondaryTextColor) {
     final record = _records[index];
     final time = '${record.time.hour.toString().padLeft(2, '0')}:${record.time.minute.toString().padLeft(2, '0')}';
     return Dismissible(
@@ -455,13 +461,13 @@ class _WaterScreenState extends State<WaterScreen> {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: Color(record.color).withOpacity(0.1),
+            color: Color(record.color).withOpacity(isDark ? 0.2 : 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(IconData(record.icon, fontFamily: 'MaterialIcons'), color: Color(record.color)),
         ),
-        title: Text(record.type),
-        subtitle: Text(time, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        title: Text(record.type, style: TextStyle(color: textColor)),
+        subtitle: Text(time, style: TextStyle(fontSize: 12, color: secondaryTextColor)),
         trailing: Text('${record.amount} ml', style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF007AFF))),
       ),
     );
