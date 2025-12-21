@@ -6,6 +6,7 @@ import 'config/theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/splash_screen.dart';
+import 'screens/profile_setup_screen.dart';
 import 'services/api_service.dart';
 import 'services/notification_service.dart';
 import 'providers/auth_provider.dart';
@@ -43,6 +44,7 @@ class MyApp extends StatelessWidget {
         '/': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
+        '/profile-setup': (context) => const ProfileSetupScreen(),
       },
     );
   }

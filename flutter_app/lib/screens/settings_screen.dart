@@ -103,6 +103,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+    final user = authState.user;
+    
     return Scaffold(
       backgroundColor: const Color(0xFFF2F2F7),
       appBar: AppBar(
@@ -114,6 +117,83 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // 个人信息卡片
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF667EEA).withOpacity(0.4),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                // 头像
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: Center(
+                    child: Text(
+                      user?.avatar?.isNotEmpty == true ? user!.avatar! : '👤',
+                      style: const TextStyle(fontSize: 32),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // 用户信息
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user?.displayName ?? '未设置昵称',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        user?.phoneNumber ?? '',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // 编辑按钮
+                GestureDetector(
+                  onTap: _showEditProfileSheet,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.edit, color: Colors.white, size: 20),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          
           // 提醒设置标题
           Padding(
             padding: const EdgeInsets.only(left: 16, bottom: 8),
@@ -174,10 +254,140 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: ListTile(
               leading: _icon(Icons.info_outline, const Color(0xFF007AFF)),
               title: const Text('版本'),
-              trailing: Text('1.1.2', style: TextStyle(color: Colors.grey[600])),
+              trailing: Text('1.2.0', style: TextStyle(color: Colors.grey[600])),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // 预设头像列表
+  final List<String> _avatarOptions = [
+    '😀', '😎', '🤖', '👨‍💻', '👩‍💻', '🦊', '🐱', '🐶',
+    '🌟', '🚀', '💎', '🎯', '🎨', '🎵', '📚', '💡',
+  ];
+
+  void _showEditProfileSheet() {
+    final user = ref.read(authProvider).user;
+    final nicknameController = TextEditingController(text: user?.nickname ?? '');
+    String selectedAvatar = user?.avatar ?? '';
+
+    showCupertinoModalPopup(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => Container(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+            top: 20,
+            left: 20,
+            right: 20,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                '编辑个人信息',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              
+              // 头像选择
+              Center(
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+                    ),
+                    borderRadius: BorderRadius.circular(40),
+                  ),
+                  child: Center(
+                    child: Text(
+                      selectedAvatar.isEmpty ? '👤' : selectedAvatar,
+                      style: const TextStyle(fontSize: 40),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // 头像选项
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                alignment: WrapAlignment.center,
+                children: _avatarOptions.map((emoji) {
+                  final isSelected = selectedAvatar == emoji;
+                  return GestureDetector(
+                    onTap: () => setS(() => selectedAvatar = emoji),
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: isSelected ? const Color(0xFF667EEA).withOpacity(0.1) : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(10),
+                        border: isSelected ? Border.all(color: const Color(0xFF667EEA), width: 2) : null,
+                      ),
+                      child: Center(child: Text(emoji, style: const TextStyle(fontSize: 24))),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 20),
+              
+              // 昵称输入
+              CupertinoTextField(
+                controller: nicknameController,
+                placeholder: '昵称',
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              const SizedBox(height: 20),
+              
+              // 保存按钮
+              Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: CupertinoButton(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: const Text('保存', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                  onPressed: () async {
+                    await ref.read(authProvider.notifier).updateProfile(
+                      nickname: nicknameController.text.isNotEmpty ? nicknameController.text : null,
+                      avatar: selectedAvatar.isNotEmpty ? selectedAvatar : null,
+                    );
+                    if (mounted) Navigator.pop(ctx);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

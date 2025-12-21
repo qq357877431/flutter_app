@@ -40,6 +40,10 @@ func main() {
 		// Token验证
 		api.GET("/auth/verify", handlers.VerifyToken)
 
+		// 用户信息
+		api.GET("/user/profile", handlers.GetProfile)
+		api.PUT("/user/profile", handlers.UpdateProfile)
+
 		// Plans
 		api.GET("/plans", handlers.GetPlans)
 		api.POST("/plans", handlers.CreatePlan)

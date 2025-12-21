@@ -12,19 +12,38 @@ import (
 )
 
 type RegisterRequest struct {
+	Username    string `json:"username" binding:"required,min=3,max=50"`
 	PhoneNumber string `json:"phone_number" binding:"required"`
 	Password    string `json:"password" binding:"required,min=6"`
 }
 
 type LoginRequest struct {
-	PhoneNumber string `json:"phone_number" binding:"required"`
-	Password    string `json:"password" binding:"required"`
+	Account  string `json:"account" binding:"required"` // 用户名或手机号
+	Password string `json:"password" binding:"required"`
+}
+
+type UpdateProfileRequest struct {
+	Nickname string `json:"nickname"`
+	Avatar   string `json:"avatar"`
 }
 
 func Register(c *gin.Context) {
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "validation error", "details": err.Error()})
+		return
+	}
+
+	// 检查用户名是否已存在
+	var existingUser models.User
+	if err := database.GetDB().Where("username = ?", req.Username).First(&existingUser).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "username already exists"})
+		return
+	}
+
+	// 检查手机号是否已存在
+	if err := database.GetDB().Where("phone_number = ?", req.PhoneNumber).First(&existingUser).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "phone number already registered"})
 		return
 	}
 
@@ -35,12 +54,13 @@ func Register(c *gin.Context) {
 	}
 
 	user := models.User{
+		Username:    req.Username,
 		PhoneNumber: req.PhoneNumber,
 		Password:    string(hashedPassword),
 	}
 
 	if err := database.GetDB().Create(&user).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "phone number already registered"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "registration failed"})
 		return
 	}
 
@@ -65,7 +85,8 @@ func Login(c *gin.Context) {
 	}
 
 	var user models.User
-	if err := database.GetDB().Where("phone_number = ?", req.PhoneNumber).First(&user).Error; err != nil {
+	// 支持用户名或手机号登录
+	if err := database.GetDB().Where("username = ? OR phone_number = ?", req.Account, req.Account).First(&user).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
 	}
@@ -88,7 +109,6 @@ func Login(c *gin.Context) {
 	})
 }
 
-
 // VerifyToken 验证token是否有效
 func VerifyToken(c *gin.Context) {
 	userID, exists := c.Get("userID")
@@ -107,4 +127,53 @@ func VerifyToken(c *gin.Context) {
 		"valid": true,
 		"user":  user,
 	})
+}
+
+// GetProfile 获取用户信息
+func GetProfile(c *gin.Context) {
+	userID := c.GetUint("userID")
+
+	var user models.User
+	if err := database.GetDB().First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
+}
+
+// UpdateProfile 更新用户信息（昵称、头像）
+func UpdateProfile(c *gin.Context) {
+	userID := c.GetUint("userID")
+
+	var req UpdateProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "validation error", "details": err.Error()})
+		return
+	}
+
+	var user models.User
+	if err := database.GetDB().First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	updates := make(map[string]interface{})
+	if req.Nickname != "" {
+		updates["nickname"] = req.Nickname
+	}
+	if req.Avatar != "" {
+		updates["avatar"] = req.Avatar
+	}
+
+	if len(updates) > 0 {
+		if err := database.GetDB().Model(&user).Updates(updates).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "update failed"})
+			return
+		}
+	}
+
+	// 重新获取更新后的用户信息
+	database.GetDB().First(&user, userID)
+	c.JSON(http.StatusOK, user)
 }

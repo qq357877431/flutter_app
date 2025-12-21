@@ -11,35 +11,92 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _accountController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _isLogin = true;
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+  String? _accountError;
+  String? _usernameError;
   String? _phoneError;
   String? _passwordError;
+  String? _confirmPasswordError;
 
   @override
   void dispose() {
+    _accountController.dispose();
+    _usernameController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
   bool _validate() {
     setState(() {
-      _phoneError = _phoneController.text.isEmpty ? '请输入手机号' : (_phoneController.text.length != 11 ? '请输入有效的手机号' : null);
-      _passwordError = _passwordController.text.isEmpty ? '请输入密码' : (_passwordController.text.length < 6 ? '密码至少6位' : null);
+      if (_isLogin) {
+        _accountError = _accountController.text.isEmpty ? '请输入用户名或手机号' : null;
+        _passwordError = _passwordController.text.isEmpty ? '请输入密码' : null;
+      } else {
+        _usernameError = _usernameController.text.isEmpty 
+            ? '请输入用户名' 
+            : (_usernameController.text.length < 3 ? '用户名至少3位' : null);
+        _phoneError = _phoneController.text.isEmpty 
+            ? '请输入手机号' 
+            : (_phoneController.text.length != 11 ? '请输入有效的手机号' : null);
+        _passwordError = _passwordController.text.isEmpty 
+            ? '请输入密码' 
+            : (_passwordController.text.length < 6 ? '密码至少6位' : null);
+        _confirmPasswordError = _confirmPasswordController.text.isEmpty 
+            ? '请确认密码' 
+            : (_confirmPasswordController.text != _passwordController.text ? '两次密码不一致' : null);
+      }
     });
-    return _phoneError == null && _passwordError == null;
+    
+    if (_isLogin) {
+      return _accountError == null && _passwordError == null;
+    } else {
+      return _usernameError == null && _phoneError == null && 
+             _passwordError == null && _confirmPasswordError == null;
+    }
   }
 
   Future<void> _submit() async {
     if (!_validate()) return;
+    
     final authNotifier = ref.read(authProvider.notifier);
-    final success = _isLogin
-        ? await authNotifier.login(_phoneController.text, _passwordController.text)
-        : await authNotifier.register(_phoneController.text, _passwordController.text);
-    if (success && mounted) Navigator.of(context).pushReplacementNamed('/home');
+    bool success;
+    
+    if (_isLogin) {
+      success = await authNotifier.login(_accountController.text, _passwordController.text);
+      if (success && mounted) {
+        Navigator.of(context).pushReplacementNamed('/home');
+      }
+    } else {
+      success = await authNotifier.register(
+        _usernameController.text,
+        _phoneController.text,
+        _passwordController.text,
+      );
+      if (success && mounted) {
+        // 新用户跳转到设置个人信息页面
+        Navigator.of(context).pushReplacementNamed('/profile-setup');
+      }
+    }
+  }
+
+  void _switchMode() {
+    setState(() {
+      _isLogin = !_isLogin;
+      _accountError = null;
+      _usernameError = null;
+      _phoneError = null;
+      _passwordError = null;
+      _confirmPasswordError = null;
+    });
   }
 
   @override
@@ -62,49 +119,95 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // 高级 Logo 设计
                   _buildLogo(),
                   const SizedBox(height: 24),
                   ShaderMask(
-                    shaderCallback: (b) => const LinearGradient(colors: [Color(0xFF667EEA), Color(0xFF764BA2)]).createShader(b),
-                    child: const Text('每日计划', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 3)),
-                  ),
-                  const SizedBox(height: 8),
-                  Text('规划生活，记录点滴', style: TextStyle(color: Colors.grey[600], fontSize: 15)),
-                  const SizedBox(height: 48),
-                  // 手机号
-                  _buildInputField(
-                    controller: _phoneController,
-                    placeholder: '手机号',
-                    icon: CupertinoIcons.phone_fill,
-                    keyboardType: TextInputType.phone,
-                    error: _phoneError,
-                    maxLength: 11,
-                  ),
-                  const SizedBox(height: 16),
-                  // 密码
-                  _buildInputField(
-                    controller: _passwordController,
-                    placeholder: '密码',
-                    icon: CupertinoIcons.lock_fill,
-                    obscureText: _obscurePassword,
-                    error: _passwordError,
-                    suffix: GestureDetector(
-                      onTap: () => setState(() => _obscurePassword = !_obscurePassword),
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 12),
-                        child: Icon(_obscurePassword ? CupertinoIcons.eye : CupertinoIcons.eye_slash, color: Colors.grey[500], size: 20),
-                      ),
+                    shaderCallback: (b) => const LinearGradient(
+                      colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+                    ).createShader(b),
+                    child: const Text(
+                      'Plan Manager',
+                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 2),
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '规划生活，记录点滴',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 15),
+                  ),
+                  const SizedBox(height: 40),
+                  
+                  if (_isLogin) ...[
+                    // 登录表单
+                    _buildInputField(
+                      controller: _accountController,
+                      placeholder: '用户名 / 手机号',
+                      icon: CupertinoIcons.person_fill,
+                      error: _accountError,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildInputField(
+                      controller: _passwordController,
+                      placeholder: '密码',
+                      icon: CupertinoIcons.lock_fill,
+                      obscureText: _obscurePassword,
+                      error: _passwordError,
+                      suffix: _buildEyeButton(_obscurePassword, () {
+                        setState(() => _obscurePassword = !_obscurePassword);
+                      }),
+                    ),
+                  ] else ...[
+                    // 注册表单
+                    _buildInputField(
+                      controller: _usernameController,
+                      placeholder: '用户名（登录用）',
+                      icon: CupertinoIcons.person_fill,
+                      error: _usernameError,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildInputField(
+                      controller: _phoneController,
+                      placeholder: '手机号',
+                      icon: CupertinoIcons.phone_fill,
+                      keyboardType: TextInputType.phone,
+                      error: _phoneError,
+                      maxLength: 11,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildInputField(
+                      controller: _passwordController,
+                      placeholder: '密码（至少6位）',
+                      icon: CupertinoIcons.lock_fill,
+                      obscureText: _obscurePassword,
+                      error: _passwordError,
+                      suffix: _buildEyeButton(_obscurePassword, () {
+                        setState(() => _obscurePassword = !_obscurePassword);
+                      }),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildInputField(
+                      controller: _confirmPasswordController,
+                      placeholder: '确认密码',
+                      icon: CupertinoIcons.lock_fill,
+                      obscureText: _obscureConfirmPassword,
+                      error: _confirmPasswordError,
+                      suffix: _buildEyeButton(_obscureConfirmPassword, () {
+                        setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
+                      }),
+                    ),
+                  ],
+                  
                   const SizedBox(height: 24),
+                  
                   // 错误提示
                   if (authState.error != null)
                     Container(
                       padding: const EdgeInsets.all(14),
                       margin: const EdgeInsets.only(bottom: 20),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: [const Color(0xFFFF6B6B).withOpacity(0.1), const Color(0xFFFF8E8E).withOpacity(0.1)]),
+                        gradient: LinearGradient(
+                          colors: [const Color(0xFFFF6B6B).withOpacity(0.1), const Color(0xFFFF8E8E).withOpacity(0.1)],
+                        ),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: const Color(0xFFFF6B6B).withOpacity(0.3)),
                       ),
@@ -116,33 +219,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ],
                       ),
                     ),
-                  // 登录按钮
+                  
+                  // 提交按钮
                   Container(
                     width: double.infinity,
                     height: 54,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(colors: [Color(0xFF667EEA), Color(0xFF764BA2)]),
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: [BoxShadow(color: const Color(0xFF667EEA).withOpacity(0.4), blurRadius: 20, offset: const Offset(0, 10))],
+                      boxShadow: [
+                        BoxShadow(color: const Color(0xFF667EEA).withOpacity(0.4), blurRadius: 20, offset: const Offset(0, 10)),
+                      ],
                     ),
                     child: CupertinoButton(
                       padding: EdgeInsets.zero,
                       onPressed: authState.isLoading ? null : _submit,
                       child: authState.isLoading
                           ? const CupertinoActivityIndicator(color: Colors.white)
-                          : Text(_isLogin ? '登录' : '注册', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+                          : Text(
+                              _isLogin ? '登录' : '注册',
+                              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+                            ),
                     ),
                   ),
                   const SizedBox(height: 20),
+                  
                   // 切换登录/注册
                   CupertinoButton(
-                    onPressed: () => setState(() => _isLogin = !_isLogin),
+                    onPressed: _switchMode,
                     child: RichText(
                       text: TextSpan(
                         style: TextStyle(color: Colors.grey[600], fontSize: 15),
                         children: [
                           TextSpan(text: _isLogin ? '没有账号？' : '已有账号？'),
-                          TextSpan(text: _isLogin ? '立即注册' : '立即登录', style: const TextStyle(color: Color(0xFF667EEA), fontWeight: FontWeight.w600)),
+                          TextSpan(
+                            text: _isLogin ? '立即注册' : '立即登录',
+                            style: const TextStyle(color: Color(0xFF667EEA), fontWeight: FontWeight.w600),
+                          ),
                         ],
                       ),
                     ),
@@ -156,12 +269,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  // 高级 Logo 组件
+  Widget _buildEyeButton(bool obscure, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 12),
+        child: Icon(
+          obscure ? CupertinoIcons.eye : CupertinoIcons.eye_slash,
+          color: Colors.grey[500],
+          size: 20,
+        ),
+      ),
+    );
+  }
+
   Widget _buildLogo() {
     return Stack(
       alignment: Alignment.center,
       children: [
-        // 外层光晕
         Container(
           width: 130,
           height: 130,
@@ -172,7 +297,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
         ),
-        // 主体容器
         Container(
           width: 100,
           height: 100,
@@ -185,82 +309,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             borderRadius: BorderRadius.circular(28),
             boxShadow: [
               BoxShadow(color: const Color(0xFF667EEA).withOpacity(0.5), blurRadius: 30, offset: const Offset(0, 15)),
-              BoxShadow(color: const Color(0xFF764BA2).withOpacity(0.3), blurRadius: 20, offset: const Offset(-5, -5)),
             ],
           ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // 装饰圆环
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
-                  ),
-                ),
-              ),
-              // 装饰线条
-              Positioned(
-                bottom: 12,
-                left: 12,
-                child: Container(
-                  width: 24,
-                  height: 3,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              // 主图标
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(CupertinoIcons.checkmark_seal_fill, size: 36, color: Colors.white),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text('PLAN', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 2)),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        // 装饰小点
-        Positioned(
-          top: 10,
-          right: 20,
-          child: Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFF43E97B), Color(0xFF38F9D7)]),
-              shape: BoxShape.circle,
-              boxShadow: [BoxShadow(color: const Color(0xFF43E97B).withOpacity(0.5), blurRadius: 6)],
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 15,
-          left: 15,
-          child: Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFFFA709A), Color(0xFFFEE140)]),
-              shape: BoxShape.circle,
-              boxShadow: [BoxShadow(color: const Color(0xFFFA709A).withOpacity(0.5), blurRadius: 6)],
-            ),
+          child: const Center(
+            child: Icon(CupertinoIcons.checkmark_seal_fill, size: 50, color: Colors.white),
           ),
         ),
       ],
@@ -284,7 +336,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [BoxShadow(color: const Color(0xFF667EEA).withOpacity(0.08), blurRadius: 15, offset: const Offset(0, 5))],
+            boxShadow: [
+              BoxShadow(color: const Color(0xFF667EEA).withOpacity(0.08), blurRadius: 15, offset: const Offset(0, 5)),
+            ],
             border: error != null ? Border.all(color: const Color(0xFFFF6B6B), width: 1.5) : null,
           ),
           child: CupertinoTextField(

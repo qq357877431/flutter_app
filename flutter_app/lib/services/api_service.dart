@@ -64,16 +64,17 @@ class ApiService {
   }
 
   // Auth
-  Future<Response> register(String phoneNumber, String password) async {
+  Future<Response> register(String username, String phoneNumber, String password) async {
     return _dio.post('/auth/register', data: {
+      'username': username,
       'phone_number': phoneNumber,
       'password': password,
     });
   }
 
-  Future<Response> login(String phoneNumber, String password) async {
+  Future<Response> login(String account, String password) async {
     return _dio.post('/auth/login', data: {
-      'phone_number': phoneNumber,
+      'account': account,  // 用户名或手机号
       'password': password,
     });
   }
@@ -88,6 +89,19 @@ class ApiService {
       await clearToken();
       return false;
     }
+  }
+
+  // 获取用户信息
+  Future<Response> getProfile() async {
+    return _dio.get('/user/profile');
+  }
+
+  // 更新用户信息
+  Future<Response> updateProfile({String? nickname, String? avatar}) async {
+    final data = <String, dynamic>{};
+    if (nickname != null) data['nickname'] = nickname;
+    if (avatar != null) data['avatar'] = avatar;
+    return _dio.put('/user/profile', data: data);
   }
 
   // Plans

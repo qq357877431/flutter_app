@@ -7,12 +7,14 @@ class AuthState {
   final bool isLoading;
   final String? error;
   final bool isLoggedIn;
+  final bool isNewUser; // 新注册用户标记
 
   AuthState({
     this.user,
     this.isLoading = false,
     this.error,
     this.isLoggedIn = false,
+    this.isNewUser = false,
   });
 
   AuthState copyWith({
@@ -20,12 +22,14 @@ class AuthState {
     bool? isLoading,
     String? error,
     bool? isLoggedIn,
+    bool? isNewUser,
   }) {
     return AuthState(
       user: user ?? this.user,
       isLoading: isLoading ?? this.isLoading,
       error: error,
       isLoggedIn: isLoggedIn ?? this.isLoggedIn,
+      isNewUser: isNewUser ?? this.isNewUser,
     );
   }
 }
@@ -38,46 +42,72 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> checkAuth() async {
     await _apiService.loadToken();
     if (_apiService.hasToken) {
-      // 验证 token 是否有效
       final isValid = await _apiService.verifyToken();
       if (isValid) {
-        state = state.copyWith(isLoggedIn: true);
+        // 获取用户信息
+        try {
+          final response = await _apiService.getProfile();
+          final user = User.fromJson(response.data);
+          state = state.copyWith(user: user, isLoggedIn: true);
+        } catch (e) {
+          state = state.copyWith(isLoggedIn: true);
+        }
       } else {
-        // token 无效，清除并跳转登录
         await _apiService.clearToken();
         state = state.copyWith(isLoggedIn: false);
       }
     }
   }
 
-  Future<bool> register(String phoneNumber, String password) async {
+  Future<bool> register(String username, String phoneNumber, String password) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final response = await _apiService.register(phoneNumber, password);
+      final response = await _apiService.register(username, phoneNumber, password);
       final token = response.data['token'] as String;
       final user = User.fromJson(response.data['user'], token: token);
       await _apiService.setToken(token);
-      state = state.copyWith(user: user, isLoading: false, isLoggedIn: true);
+      state = state.copyWith(user: user, isLoading: false, isLoggedIn: true, isNewUser: true);
       return true;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: '注册失败，请重试');
+      String errorMsg = '注册失败，请重试';
+      if (e.toString().contains('username already exists')) {
+        errorMsg = '用户名已存在';
+      } else if (e.toString().contains('phone number already registered')) {
+        errorMsg = '手机号已注册';
+      }
+      state = state.copyWith(isLoading: false, error: errorMsg);
       return false;
     }
   }
 
-  Future<bool> login(String phoneNumber, String password) async {
+  Future<bool> login(String account, String password) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final response = await _apiService.login(phoneNumber, password);
+      final response = await _apiService.login(account, password);
       final token = response.data['token'] as String;
       final user = User.fromJson(response.data['user'], token: token);
       await _apiService.setToken(token);
-      state = state.copyWith(user: user, isLoading: false, isLoggedIn: true);
+      state = state.copyWith(user: user, isLoading: false, isLoggedIn: true, isNewUser: false);
       return true;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: '登录失败，请检查手机号和密码');
+      state = state.copyWith(isLoading: false, error: '登录失败，请检查账号和密码');
       return false;
     }
+  }
+
+  Future<bool> updateProfile({String? nickname, String? avatar}) async {
+    try {
+      final response = await _apiService.updateProfile(nickname: nickname, avatar: avatar);
+      final user = User.fromJson(response.data);
+      state = state.copyWith(user: user);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  void clearNewUserFlag() {
+    state = state.copyWith(isNewUser: false);
   }
 
   Future<void> logout() async {
