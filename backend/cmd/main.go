@@ -33,6 +33,18 @@ func main() {
 		auth.POST("/login", handlers.Login)
 	}
 
+	// Admin routes (public login)
+	r.POST("/api/admin/login", handlers.AdminLogin)
+
+	// Admin protected routes
+	admin := r.Group("/api/admin")
+	admin.Use(middleware.AdminMiddleware())
+	{
+		admin.GET("/users", handlers.GetUsers)
+		admin.POST("/users", handlers.AdminCreateUser)
+		admin.PUT("/users/:id/password", handlers.AdminResetPassword)
+	}
+
 	// Protected routes
 	api := r.Group("/api")
 	api.Use(middleware.JWTMiddleware())

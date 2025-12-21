@@ -21,3 +21,15 @@ services:
     command: sh -c "cd /app && go mod download && go run ./cmd/main.go"
     volumes:
       - /opt/flutter_app/backend:/app
+
+  admin-dashboard:
+    build:
+      context: ./admin-dashboard
+      dockerfile: Dockerfile
+    container_name: daily_planner_admin
+    restart: always
+    ports:
+      - "3000:80"
+    network_mode: host
+    depends_on:
+      - backend
