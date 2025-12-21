@@ -16,7 +16,7 @@ services:
       JWT_SECRET: your-super-secret-jwt-key-2024
       SERVER_PORT: 8080
     network_mode: host
-    command: sh -c "cd /app && go mod download && go run ./cmd/main.go"
+    command: sh -c "cd /app && go mod tidy && go run ./cmd/main.go"
     volumes:
       - /opt/flutter_app/backend:/app
 
