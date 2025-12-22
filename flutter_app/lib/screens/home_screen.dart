@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import '../config/colors.dart';
 import 'plan_screen.dart';
 import 'expense_screen.dart';
 import 'water_screen.dart';
@@ -12,16 +13,39 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
+  late AnimationController _animationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _onTabTapped(int index) {
+    if (_currentIndex != index) {
+      setState(() => _currentIndex = index);
+      _animationController.forward(from: 0);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final navBgColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
-    final unselectedColor = isDark ? const Color(0xFF8E8E93) : Colors.grey;
+    final colors = AppColors(isDark);
     
     return Scaffold(
+      backgroundColor: colors.scaffoldBg,
       body: IndexedStack(
         index: _currentIndex,
         children: const [
@@ -33,14 +57,13 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: navBgColor,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
+          color: colors.cardBg,
+          border: Border(
+            top: BorderSide(
+              color: colors.divider,
+              width: 0.5,
             ),
-          ],
+          ),
         ),
         child: SafeArea(
           child: Padding(
@@ -48,10 +71,46 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(0, CupertinoIcons.calendar, CupertinoIcons.calendar_today, '计划', const Color(0xFF667EEA), unselectedColor, isDark),
-                _buildNavItem(1, CupertinoIcons.money_dollar_circle, CupertinoIcons.money_dollar_circle_fill, '记账', const Color(0xFF34C759), unselectedColor, isDark),
-                _buildNavItem(2, CupertinoIcons.drop, CupertinoIcons.drop_fill, '喝水', const Color(0xFF007AFF), unselectedColor, isDark),
-                _buildNavItem(3, CupertinoIcons.gear, CupertinoIcons.gear_solid, '设置', const Color(0xFFFF9500), unselectedColor, isDark),
+                _NavItem(
+                  index: 0,
+                  currentIndex: _currentIndex,
+                  icon: CupertinoIcons.calendar,
+                  activeIcon: CupertinoIcons.calendar_today,
+                  label: '计划',
+                  color: colors.primary,
+                  colors: colors,
+                  onTap: () => _onTabTapped(0),
+                ),
+                _NavItem(
+                  index: 1,
+                  currentIndex: _currentIndex,
+                  icon: CupertinoIcons.money_dollar_circle,
+                  activeIcon: CupertinoIcons.money_dollar_circle_fill,
+                  label: '记账',
+                  color: colors.green,
+                  colors: colors,
+                  onTap: () => _onTabTapped(1),
+                ),
+                _NavItem(
+                  index: 2,
+                  currentIndex: _currentIndex,
+                  icon: CupertinoIcons.drop,
+                  activeIcon: CupertinoIcons.drop_fill,
+                  label: '喝水',
+                  color: colors.blue,
+                  colors: colors,
+                  onTap: () => _onTabTapped(2),
+                ),
+                _NavItem(
+                  index: 3,
+                  currentIndex: _currentIndex,
+                  icon: CupertinoIcons.gear,
+                  activeIcon: CupertinoIcons.gear_solid,
+                  label: '设置',
+                  color: colors.orange,
+                  colors: colors,
+                  onTap: () => _onTabTapped(3),
+                ),
               ],
             ),
           ),
@@ -59,34 +118,64 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+}
 
-  Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label, Color color, Color unselectedColor, bool isDark) {
-    final isSelected = _currentIndex == index;
+class _NavItem extends StatelessWidget {
+  final int index;
+  final int currentIndex;
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final Color color;
+  final AppColors colors;
+  final VoidCallback onTap;
+
+  const _NavItem({
+    required this.index,
+    required this.currentIndex,
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.color,
+    required this.colors,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isSelected = currentIndex == index;
+    
     return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
+      onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(isDark ? 0.2 : 0.1) : Colors.transparent,
+          color: isSelected ? color.withOpacity(0.12) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              isSelected ? activeIcon : icon,
-              color: isSelected ? color : unselectedColor,
-              size: 24,
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Icon(
+                isSelected ? activeIcon : icon,
+                key: ValueKey(isSelected),
+                color: isSelected ? color : colors.textTertiary,
+                size: 24,
+              ),
             ),
             const SizedBox(height: 4),
-            Text(
-              label,
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
               style: TextStyle(
                 fontSize: 11,
-                color: isSelected ? color : unselectedColor,
+                color: isSelected ? color : colors.textTertiary,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),
+              child: Text(label),
             ),
           ],
         ),

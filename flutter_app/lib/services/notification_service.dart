@@ -161,51 +161,39 @@ class NotificationService {
     if (!_isSupported) return;
     
     // 取消之前的提醒
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < 24; i++) {
       await _notifications.cancel(id + i);
     }
     
-    // 计算从开始时间到晚上22点的所有提醒时间
-    final now = tz.TZDateTime.now(tz.local);
+    // 计算从开始时间到晚上22点的所有提醒时间点
     final endHour = 22; // 晚上10点停止提醒
     
-    int notificationIndex = 0;
-    var currentTime = tz.TZDateTime(tz.local, now.year, now.month, now.day, startHour, startMinute);
+    // 收集所有需要提醒的时间点 (小时:分钟)
+    List<Map<String, int>> reminderTimes = [];
+    int currentHour = startHour;
+    int currentMinute = startMinute;
     
-    while (currentTime.hour < endHour && notificationIndex < 16) {
-      var scheduledTime = currentTime;
+    while (currentHour < endHour && reminderTimes.length < 24) {
+      reminderTimes.add({'hour': currentHour, 'minute': currentMinute});
       
-      // 如果时间已过，设置为明天
-      if (scheduledTime.isBefore(now)) {
-        scheduledTime = scheduledTime.add(const Duration(days: 1));
+      // 增加间隔
+      currentMinute += intervalMinutes;
+      while (currentMinute >= 60) {
+        currentMinute -= 60;
+        currentHour++;
       }
-      
-      await _notifications.zonedSchedule(
-        id + notificationIndex,
-        '喝水提醒',
-        '记得喝水，保持健康！💧',
-        scheduledTime,
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'water_reminder',
-            '喝水提醒',
-            channelDescription: '定时喝水提醒',
-            importance: Importance.high,
-            priority: Priority.high,
-          ),
-          iOS: DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: true,
-          ),
-        ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-        matchDateTimeComponents: DateTimeComponents.time, // 每天重复
+    }
+    
+    // 为每个时间点设置每日重复提醒
+    for (int i = 0; i < reminderTimes.length; i++) {
+      final time = reminderTimes[i];
+      await scheduleDailyNotification(
+        id: id + i,
+        hour: time['hour']!,
+        minute: time['minute']!,
+        title: '喝水提醒',
+        body: '记得喝水，保持健康！💧',
       );
-      
-      currentTime = currentTime.add(Duration(minutes: intervalMinutes));
-      notificationIndex++;
     }
   }
 
