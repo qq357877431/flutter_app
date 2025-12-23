@@ -2,9 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../config/colors.dart';
 import '../models/plan.dart';
+import '../providers/auth_provider.dart';
 import '../providers/plan_provider.dart';
 import '../services/notification_service.dart';
 
@@ -43,9 +43,9 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
       // 全部完成，取消提醒
       await _notificationService.cancelPlanReminder();
     } else {
-      // 还有未完成的，设置提醒
-      final prefs = await SharedPreferences.getInstance();
-      final userName = prefs.getString('user_nickname') ?? prefs.getString('user_name');
+      // 还有未完成的，设置提醒 - 从 authProvider 获取用户名
+      final user = ref.read(authProvider).user;
+      final userName = user?.nickname ?? user?.username;
       await _notificationService.schedulePlanReminder(userName: userName);
     }
   }

@@ -1,19 +1,21 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:math' as math;
 import '../config/colors.dart';
+import '../providers/auth_provider.dart';
 import '../services/notification_service.dart';
 
-class WaterScreen extends StatefulWidget {
+class WaterScreen extends ConsumerStatefulWidget {
   const WaterScreen({super.key});
 
   @override
-  State<WaterScreen> createState() => _WaterScreenState();
+  ConsumerState<WaterScreen> createState() => _WaterScreenState();
 }
 
-class _WaterScreenState extends State<WaterScreen> with SingleTickerProviderStateMixin {
+class _WaterScreenState extends ConsumerState<WaterScreen> with SingleTickerProviderStateMixin {
   final _notificationService = NotificationService();
   List<WaterRecord> _records = [];
   int _todayTotal = 0;
@@ -475,9 +477,9 @@ class _WaterScreenState extends State<WaterScreen> with SingleTickerProviderStat
   }
 
   Future<void> _scheduleReminder() async {
-    // 获取用户名
-    final prefs = await SharedPreferences.getInstance();
-    final userName = prefs.getString('user_nickname') ?? prefs.getString('user_name');
+    // 从 authProvider 获取用户名
+    final user = ref.read(authProvider).user;
+    final userName = user?.nickname ?? user?.username;
     
     await _notificationService.scheduleWaterReminder(
       startHour: _startTime.hour,
