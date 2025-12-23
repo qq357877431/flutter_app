@@ -157,6 +157,7 @@ class NotificationService {
     int startHour = 8,
     int startMinute = 0,
     int intervalMinutes = 60,
+    String? userName,
   }) async {
     if (!_isSupported) return;
     
@@ -184,16 +185,76 @@ class NotificationService {
       }
     }
     
+    // 俏皮的提醒文案
+    final messages = [
+      '记得补充水分哦~ 💧',
+      '喝杯水休息一下吧~ 🌊',
+      '水是生命之源，来一杯！💦',
+      '该喝水啦，保持水润~ 💙',
+      '补充水分，元气满满！✨',
+    ];
+    
     // 为每个时间点设置每日重复提醒
     for (int i = 0; i < reminderTimes.length; i++) {
       final time = reminderTimes[i];
+      final displayName = userName?.isNotEmpty == true ? userName! : '小伙伴';
+      final message = messages[i % messages.length];
+      
       await scheduleDailyNotification(
         id: id + i,
         hour: time['hour']!,
         minute: time['minute']!,
-        title: '喝水提醒',
-        body: '记得喝水，保持健康！💧',
+        title: '哈喽 $displayName 👋',
+        body: message,
       );
+    }
+  }
+
+  /// 设置计划任务提醒（每小时提醒一次，直到任务完成）
+  Future<void> schedulePlanReminder({
+    int id = 3000,
+    String? userName,
+  }) async {
+    if (!_isSupported) return;
+    
+    // 取消之前的提醒
+    for (int i = 0; i < 16; i++) {
+      await _notifications.cancel(id + i);
+    }
+    
+    final displayName = userName?.isNotEmpty == true ? userName! : '小伙伴';
+    
+    // 俏皮的提醒文案
+    final messages = [
+      '今日计划还没完成哦，加油！💪',
+      '别忘了今天的计划，继续努力！🎯',
+      '计划完成了吗？不要懈怠哦~ ⏰',
+      '今日事今日毕，冲鸭！🦆',
+      '还有任务没完成，再坚持一下！✊',
+    ];
+    
+    // 从早上9点到晚上21点，每小时提醒一次
+    for (int i = 0; i < 13; i++) {
+      final hour = 9 + i;
+      if (hour > 21) break;
+      
+      final message = messages[i % messages.length];
+      
+      await scheduleDailyNotification(
+        id: id + i,
+        hour: hour,
+        minute: 0,
+        title: '哈喽 $displayName 📋',
+        body: message,
+      );
+    }
+  }
+
+  /// 取消计划任务提醒
+  Future<void> cancelPlanReminder({int id = 3000}) async {
+    if (!_isSupported) return;
+    for (int i = 0; i < 16; i++) {
+      await _notifications.cancel(id + i);
     }
   }
 

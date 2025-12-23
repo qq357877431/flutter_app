@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/colors.dart';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/api_service.dart';
@@ -18,13 +19,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   TimeOfDay _bedtime = const TimeOfDay(hour: 23, minute: 0);
   bool _bedtimeEnabled = false;
 
+  final List<String> _avatarOptions = [
+    '😀', '😎', '🤖', '👨‍💻', '👩‍💻', '🦊', '🐱', '🐶',
+    '🌟', '🚀', '💎', '🎯', '🎨', '🎵', '📚', '💡',
+  ];
+
   @override
   void initState() {
     super.initState();
     _loadBedtimeSettings();
   }
 
-  // 加载早睡提醒设置
   Future<void> _loadBedtimeSettings() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -34,13 +39,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _bedtime = TimeOfDay(hour: hour, minute: minute);
     });
     
-    // 如果启用了提醒，重新设置
     if (_bedtimeEnabled) {
       await _notificationService.scheduleBedtimeReminder(hour: _bedtime.hour, minute: _bedtime.minute);
     }
   }
 
-  // 保存早睡提醒设置
   Future<void> _saveBedtimeSettings() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('bedtime_enabled', _bedtimeEnabled);
@@ -50,47 +53,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   String _formatTime(TimeOfDay time) {
     return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-  }
-
-  void _showBedtimePicker() {
-    int tempH = _bedtime.hour;
-    int tempM = _bedtime.minute;
-    showCupertinoModalPopup(
-      context: context,
-      builder: (ctx) => Container(
-        height: 300,
-        color: CupertinoColors.systemBackground.resolveFrom(ctx),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                CupertinoButton(child: const Text('取消'), onPressed: () => Navigator.pop(ctx)),
-                CupertinoButton(child: const Text('确定'), onPressed: () async {
-                  setState(() => _bedtime = TimeOfDay(hour: tempH, minute: tempM));
-                  Navigator.pop(ctx);
-                  if (_bedtimeEnabled) {
-                    await _notificationService.scheduleBedtimeReminder(hour: tempH, minute: tempM);
-                  }
-                  await _saveBedtimeSettings();
-                }),
-              ],
-            ),
-            Expanded(
-              child: CupertinoDatePicker(
-                mode: CupertinoDatePickerMode.time,
-                use24hFormat: true,
-                initialDateTime: DateTime(2024, 1, 1, _bedtime.hour, _bedtime.minute),
-                onDateTimeChanged: (dt) {
-                  tempH = dt.hour;
-                  tempM = dt.minute;
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Future<void> _toggleBedtime(bool v) async {
@@ -108,66 +70,47 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final authState = ref.watch(authProvider);
     final user = authState.user;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF2C2C2E) : Colors.white;
-    final bgColor = isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF2F2F7);
-    final textSecondary = isDark ? const Color(0xFF8E8E93) : Colors.grey[600];
+    final colors = AppColors(isDark);
     
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: colors.scaffoldBg,
       appBar: AppBar(
-        title: const Text('设置', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          '设置',
+          style: TextStyle(fontWeight: FontWeight.bold, color: colors.textPrimary),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         children: [
           // 个人信息卡片
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF667EEA).withOpacity(0.4),
-                  blurRadius: 15,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
+            decoration: colors.specialCardDecoration(color: colors.cardBg),
             child: Row(
               children: [
-                // 头像
                 Container(
                   width: 60,
                   height: 60,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(30),
-                  ),
                   child: Center(
                     child: Text(
                       user?.avatar?.isNotEmpty == true ? user!.avatar! : '👤',
-                      style: const TextStyle(fontSize: 32),
+                      style: const TextStyle(fontSize: 40),
                     ),
                   ),
                 ),
                 const SizedBox(width: 16),
-                // 用户信息
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         user?.displayName ?? '未设置昵称',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: colors.textPrimary,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -175,178 +118,136 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       const SizedBox(height: 4),
                       Text(
                         user?.phoneNumber ?? '',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: colors.textSecondary, fontSize: 14),
                       ),
                     ],
                   ),
                 ),
-                // 编辑按钮
                 GestureDetector(
                   onTap: _showEditProfileSheet,
                   child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.edit, color: Colors.white, size: 20),
+                    decoration: colors.circleButtonDecoration(shadowColor: colors.primary),
+                    padding: const EdgeInsets.all(10),
+                    child: Icon(Icons.edit, color: colors.primary, size: 20),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
           
-          // 外观设置标题
-          Padding(
-            padding: const EdgeInsets.only(left: 16, bottom: 8),
-            child: Text('外观', style: TextStyle(fontSize: 13, color: textSecondary)),
-          ),
-          // 主题设置
+          // 外观设置
+          _buildSectionTitle('外观', colors),
           Container(
-            decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(12)),
-            child: ListTile(
-              leading: _icon(Icons.palette, const Color(0xFF34C759)),
-              title: const Text('主题模式'),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(_getThemeModeText(ref.watch(themeModeProvider)), style: TextStyle(color: textSecondary)),
-                  Icon(Icons.chevron_right, color: textSecondary),
-                ],
+            decoration: colors.cardDecoration(radius: 16),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: ListTile(
+                leading: _icon(Icons.palette, colors.success),
+                title: Text('主题模式', style: TextStyle(color: colors.textPrimary)),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _getThemeModeText(ref.watch(themeModeProvider)),
+                      style: TextStyle(color: colors.textSecondary),
+                    ),
+                    Icon(Icons.chevron_right, color: colors.textTertiary),
+                  ],
+                ),
+                onTap: _showThemePicker,
               ),
-              onTap: _showThemePicker,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
           
-          // 提醒设置标题
-          Padding(
-            padding: const EdgeInsets.only(left: 16, bottom: 8),
-            child: Text('提醒设置', style: TextStyle(fontSize: 13, color: textSecondary)),
-          ),
-          // 早睡提醒
+          // 提醒设置
+          _buildSectionTitle('提醒设置', colors),
           Container(
-            decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(12)),
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      _icon(Icons.nightlight_round, const Color(0xFF5856D6)),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('早睡提醒', style: TextStyle(fontSize: 16, color: isDark ? Colors.white : Colors.black)),
-                            const SizedBox(height: 2),
-                            Text('每天 ${_formatTime(_bedtime)}', style: TextStyle(fontSize: 13, color: textSecondary)),
-                          ],
-                        ),
-                      ),
-                      // 美化的开关
-                      GestureDetector(
-                        onTap: () => _toggleBedtime(!_bedtimeEnabled),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          width: 52,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            gradient: _bedtimeEnabled 
-                                ? const LinearGradient(colors: [Color(0xFF5856D6), Color(0xFF7C3AED)])
-                                : null,
-                            color: _bedtimeEnabled ? null : (isDark ? const Color(0xFF48484A) : Colors.grey[300]),
-                          ),
-                          child: AnimatedAlign(
-                            duration: const Duration(milliseconds: 200),
-                            alignment: _bedtimeEnabled ? Alignment.centerRight : Alignment.centerLeft,
-                            child: Container(
-                              width: 28,
-                              height: 28,
-                              margin: const EdgeInsets.symmetric(horizontal: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(14),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: _bedtimeEnabled 
-                                  ? const Icon(Icons.check, size: 16, color: Color(0xFF5856D6))
-                                  : null,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (_bedtimeEnabled) ...[
-                  Divider(height: 1, indent: 56, color: isDark ? const Color(0xFF38383A) : Colors.grey[200]),
-                  ListTile(
-                    leading: _icon(Icons.access_time, const Color(0xFF007AFF)),
-                    title: const Text('提醒时间'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
+            decoration: colors.cardDecoration(radius: 16),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
                       children: [
-                        Text(_formatTime(_bedtime), style: TextStyle(color: textSecondary)),
-                        Icon(Icons.chevron_right, color: textSecondary),
+                        _icon(Icons.nightlight_round, const Color(0xFFAF52DE)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('早睡提醒', style: TextStyle(fontSize: 16, color: colors.textPrimary)),
+                              const SizedBox(height: 2),
+                              Text('每天 ${_formatTime(_bedtime)}', style: TextStyle(fontSize: 13, color: colors.textSecondary)),
+                            ],
+                          ),
+                        ),
+                        _buildSwitch(_bedtimeEnabled, (v) => _toggleBedtime(v), colors),
                       ],
                     ),
-                    onTap: _showBedtimePicker,
+                  ),
+                  if (_bedtimeEnabled) ...[
+                    Divider(height: 1, indent: 56, color: colors.divider),
+                    ListTile(
+                      leading: _icon(Icons.access_time, colors.accent),
+                      title: Text('提醒时间', style: TextStyle(color: colors.textPrimary)),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(_formatTime(_bedtime), style: TextStyle(color: colors.textSecondary)),
+                          Icon(Icons.chevron_right, color: colors.textTertiary),
+                        ],
+                      ),
+                      onTap: _showBedtimePicker,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 28),
+          
+          // 账户安全
+          _buildSectionTitle('账户安全', colors),
+          Container(
+            decoration: colors.cardDecoration(radius: 16),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: _icon(Icons.lock_outline, colors.accent),
+                    title: Text('修改密码', style: TextStyle(color: colors.textPrimary)),
+                    trailing: Icon(Icons.chevron_right, color: colors.textTertiary),
+                    onTap: _showChangePasswordSheet,
+                  ),
+                  Divider(height: 1, indent: 56, color: colors.divider),
+                  ListTile(
+                    leading: _icon(Icons.logout, colors.error),
+                    title: Text('退出登录', style: TextStyle(color: colors.error)),
+                    trailing: Icon(Icons.chevron_right, color: colors.textTertiary),
+                    onTap: _showLogoutDialog,
                   ),
                 ],
-              ],
+              ),
             ),
           ),
-          const SizedBox(height: 24),
-          // 账户标题
-          Padding(
-            padding: const EdgeInsets.only(left: 16, bottom: 8),
-            child: Text('账户安全', style: TextStyle(fontSize: 13, color: textSecondary)),
-          ),
+          const SizedBox(height: 28),
+          
+          // 关于
+          _buildSectionTitle('关于', colors),
           Container(
-            decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(12)),
-            child: Column(
-              children: [
-                ListTile(
-                  leading: _icon(Icons.lock_outline, const Color(0xFF007AFF)),
-                  title: const Text('修改密码'),
-                  trailing: Icon(Icons.chevron_right, color: textSecondary),
-                  onTap: _showChangePasswordSheet,
-                ),
-                Divider(height: 1, indent: 56, color: isDark ? const Color(0xFF38383A) : Colors.grey[200]),
-                ListTile(
-                  leading: _icon(Icons.logout, const Color(0xFFFF3B30)),
-                  title: const Text('退出登录', style: TextStyle(color: Color(0xFFFF3B30))),
-                  trailing: Icon(Icons.chevron_right, color: textSecondary),
-                  onTap: _showLogoutDialog,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          // 关于标题
-          Padding(
-            padding: const EdgeInsets.only(left: 16, bottom: 8),
-            child: Text('关于', style: TextStyle(fontSize: 13, color: textSecondary)),
-          ),
-          Container(
-            decoration: BoxDecoration(color: cardColor, borderRadius: BorderRadius.circular(12)),
-            child: ListTile(
-              leading: _icon(Icons.info_outline, const Color(0xFF007AFF)),
-              title: const Text('版本'),
-              trailing: Text('1.3.2', style: TextStyle(color: textSecondary)),
+            decoration: colors.cardDecoration(radius: 16),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: ListTile(
+                leading: _icon(Icons.info_outline, colors.accent),
+                title: Text('版本', style: TextStyle(color: colors.textPrimary)),
+                trailing: Text('1.3.3', style: TextStyle(color: colors.textSecondary)),
+              ),
             ),
           ),
         ],
@@ -354,235 +255,279 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  void _showChangePasswordSheet() {
-    final oldPasswordController = TextEditingController();
-    final newPasswordController = TextEditingController();
-    final confirmPasswordController = TextEditingController();
-    bool isLoading = false;
-    String? errorMessage;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF2C2C2E) : Colors.white;
-    final inputBgColor = isDark ? const Color(0xFF3A3A3C) : Colors.grey[100];
-    final textColor = isDark ? Colors.white : Colors.black;
+  Widget _buildSectionTitle(String title, AppColors colors) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 10),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: colors.textSecondary,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setS) => Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+  Widget _buildSwitch(bool value, Function(bool) onChanged, AppColors colors) {
+    return GestureDetector(
+      onTap: () => onChanged(!value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 52,
+        height: 32,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: value ? colors.primary : colors.divider,
+        ),
+        child: AnimatedAlign(
+          duration: const Duration(milliseconds: 200),
+          alignment: value ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
-            padding: const EdgeInsets.all(20),
+            width: 28,
+            height: 28,
+            margin: const EdgeInsets.symmetric(horizontal: 2),
             decoration: BoxDecoration(
-              color: cardColor,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[400],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
                 ),
-                const SizedBox(height: 20),
-                Text('修改密码', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor)),
-                const SizedBox(height: 20),
-                
-                CupertinoTextField(
-                  controller: oldPasswordController,
-                  placeholder: '当前密码',
-                  obscureText: true,
-                  padding: const EdgeInsets.all(14),
-                  style: TextStyle(color: textColor),
-                  placeholderStyle: TextStyle(color: isDark ? const Color(0xFF8E8E93) : Colors.grey),
-                  decoration: BoxDecoration(
-                    color: inputBgColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                CupertinoTextField(
-                  controller: newPasswordController,
-                  placeholder: '新密码（至少6位）',
-                  obscureText: true,
-                  padding: const EdgeInsets.all(14),
-                  style: TextStyle(color: textColor),
-                  placeholderStyle: TextStyle(color: isDark ? const Color(0xFF8E8E93) : Colors.grey),
-                  decoration: BoxDecoration(
-                    color: inputBgColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                CupertinoTextField(
-                  controller: confirmPasswordController,
-                  placeholder: '确认新密码',
-                  obscureText: true,
-                  padding: const EdgeInsets.all(14),
-                  style: TextStyle(color: textColor),
-                  placeholderStyle: TextStyle(color: isDark ? const Color(0xFF8E8E93) : Colors.grey),
-                  decoration: BoxDecoration(
-                    color: inputBgColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                
-                if (errorMessage != null) ...[
-                  const SizedBox(height: 12),
-                  Text(errorMessage!, style: const TextStyle(color: Color(0xFFFF3B30), fontSize: 14)),
-                ],
-                
-                const SizedBox(height: 20),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [Color(0xFF007AFF), Color(0xFF5AC8FA)]),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: CupertinoButton(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    onPressed: isLoading ? null : () async {
-                      // 验证
-                      if (oldPasswordController.text.isEmpty) {
-                        setS(() => errorMessage = '请输入当前密码');
-                        return;
-                      }
-                      if (newPasswordController.text.length < 6) {
-                        setS(() => errorMessage = '新密码至少6位');
-                        return;
-                      }
-                      if (newPasswordController.text != confirmPasswordController.text) {
-                        setS(() => errorMessage = '两次密码不一致');
-                        return;
-                      }
-                      
-                      setS(() {
-                        isLoading = true;
-                        errorMessage = null;
-                      });
-                      
-                      try {
-                        await ApiService().changePassword(
-                          oldPasswordController.text,
-                          newPasswordController.text,
-                        );
-                        if (ctx.mounted) {
-                          Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('密码修改成功'), backgroundColor: Color(0xFF34C759)),
-                          );
-                        }
-                      } catch (e) {
-                        setS(() {
-                          isLoading = false;
-                          errorMessage = '当前密码错误';
-                        });
-                      }
-                    },
-                    child: isLoading
-                        ? const CupertinoActivityIndicator(color: Colors.white)
-                        : const Text('确认修改', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-                  ),
-                ),
-                SizedBox(height: MediaQuery.of(ctx).padding.bottom + 10),
               ],
             ),
+            child: value ? Icon(Icons.check, size: 16, color: colors.primary) : null,
           ),
         ),
       ),
     );
   }
 
-  // 预设头像列表
-  final List<String> _avatarOptions = [
-    '😀', '😎', '🤖', '👨‍💻', '👩‍💻', '🦊', '🐱', '🐶',
-    '🌟', '🚀', '💎', '🎯', '🎨', '🎵', '📚', '💡',
-  ];
+  Widget _icon(IconData icon, Color color) {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(8)),
+      child: Icon(icon, color: Colors.white, size: 18),
+    );
+  }
+
+  String _getThemeModeText(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.light: return '浅色';
+      case ThemeMode.dark: return '深色';
+      case ThemeMode.system: return '跟随系统';
+    }
+  }
+
+  void _showBedtimePicker() {
+    int tempH = _bedtime.hour;
+    int tempM = _bedtime.minute;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors(isDark);
+    
+    showCupertinoModalPopup(
+      context: context,
+      builder: (ctx) => Container(
+        height: 340,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: colors.cardBg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colors.divider,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  child: Text('取消', style: TextStyle(color: colors.textSecondary)),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+                Text('选择时间', style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: colors.textPrimary,
+                )),
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  child: Text('确定', style: TextStyle(
+                    color: colors.primary,
+                    fontWeight: FontWeight.w600,
+                  )),
+                  onPressed: () async {
+                    setState(() => _bedtime = TimeOfDay(hour: tempH, minute: tempM));
+                    Navigator.pop(ctx);
+                    if (_bedtimeEnabled) {
+                      await _notificationService.scheduleBedtimeReminder(hour: tempH, minute: tempM);
+                    }
+                    await _saveBedtimeSettings();
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.time,
+                use24hFormat: true,
+                initialDateTime: DateTime(2024, 1, 1, _bedtime.hour, _bedtime.minute),
+                onDateTimeChanged: (dt) {
+                  tempH = dt.hour;
+                  tempM = dt.minute;
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showThemePicker() {
+    final currentMode = ref.read(themeModeProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors(isDark);
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: colors.cardBg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(color: colors.divider, borderRadius: BorderRadius.circular(2)),
+            ),
+            const SizedBox(height: 20),
+            Text('选择主题', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colors.textPrimary)),
+            const SizedBox(height: 20),
+            _buildThemeOption(ctx, Icons.light_mode_rounded, '浅色模式', '始终使用浅色主题',
+              currentMode == ThemeMode.light, () {
+                ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.light);
+                Navigator.pop(ctx);
+              }, colors),
+            const SizedBox(height: 12),
+            _buildThemeOption(ctx, Icons.dark_mode_rounded, '深色模式', '始终使用深色主题',
+              currentMode == ThemeMode.dark, () {
+                ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.dark);
+                Navigator.pop(ctx);
+              }, colors),
+            const SizedBox(height: 12),
+            _buildThemeOption(ctx, Icons.brightness_auto_rounded, '跟随系统', '自动适应系统主题设置',
+              currentMode == ThemeMode.system, () {
+                ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.system);
+                Navigator.pop(ctx);
+              }, colors),
+            SizedBox(height: MediaQuery.of(ctx).padding.bottom + 10),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeOption(BuildContext ctx, IconData icon, String title, String subtitle,
+      bool isSelected, VoidCallback onTap, AppColors colors) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? colors.primary.withOpacity(0.1) : colors.cardBgSecondary,
+          borderRadius: BorderRadius.circular(14),
+          border: isSelected ? Border.all(color: colors.primary, width: 2) : null,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44, height: 44,
+              decoration: BoxDecoration(
+                color: isSelected ? colors.primary : colors.divider,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: isSelected ? Colors.white : colors.textSecondary, size: 24),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: colors.textPrimary)),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: TextStyle(fontSize: 13, color: colors.textSecondary)),
+                ],
+              ),
+            ),
+            if (isSelected) Icon(Icons.check_circle_rounded, color: colors.primary, size: 24),
+          ],
+        ),
+      ),
+    );
+  }
 
   void _showEditProfileSheet() {
     final user = ref.read(authProvider).user;
     final nicknameController = TextEditingController(text: user?.nickname ?? '');
     String selectedAvatar = user?.avatar ?? '';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors(isDark);
 
     showCupertinoModalPopup(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) => Container(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-            top: 20,
-            left: 20,
-            right: 20,
-          ),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom + 20, top: 20, left: 20, right: 20),
+          decoration: BoxDecoration(
+            color: colors.cardBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
+              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: colors.divider, borderRadius: BorderRadius.circular(2)))),
               const SizedBox(height: 16),
-              const Text(
-                '编辑个人信息',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
+              Text('编辑个人信息', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colors.textPrimary)),
               const SizedBox(height: 20),
-              
-              // 头像选择
               Center(
                 child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-                    ),
-                    borderRadius: BorderRadius.circular(40),
-                  ),
-                  child: Center(
-                    child: Text(
-                      selectedAvatar.isEmpty ? '👤' : selectedAvatar,
-                      style: const TextStyle(fontSize: 40),
-                    ),
-                  ),
+                  width: 80, height: 80,
+                  child: Center(child: Text(selectedAvatar.isEmpty ? '👤' : selectedAvatar, style: const TextStyle(fontSize: 48))),
                 ),
               ),
               const SizedBox(height: 16),
-              
-              // 头像选项
               Wrap(
-                spacing: 10,
-                runSpacing: 10,
+                spacing: 10, runSpacing: 10,
                 alignment: WrapAlignment.center,
                 children: _avatarOptions.map((emoji) {
                   final isSelected = selectedAvatar == emoji;
                   return GestureDetector(
                     onTap: () => setS(() => selectedAvatar = emoji),
                     child: Container(
-                      width: 44,
-                      height: 44,
+                      width: 44, height: 44,
                       decoration: BoxDecoration(
-                        color: isSelected ? const Color(0xFF667EEA).withOpacity(0.1) : Colors.grey[100],
+                        color: isSelected ? colors.primary.withOpacity(0.1) : colors.cardBgSecondary,
                         borderRadius: BorderRadius.circular(10),
-                        border: isSelected ? Border.all(color: const Color(0xFF667EEA), width: 2) : null,
+                        border: isSelected ? Border.all(color: colors.primary, width: 2) : null,
                       ),
                       child: Center(child: Text(emoji, style: const TextStyle(fontSize: 24))),
                     ),
@@ -590,27 +535,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 }).toList(),
               ),
               const SizedBox(height: 20),
-              
-              // 昵称输入
               CupertinoTextField(
                 controller: nicknameController,
                 placeholder: '昵称',
                 padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                style: TextStyle(color: colors.textPrimary),
+                placeholderStyle: TextStyle(color: colors.textTertiary),
+                decoration: BoxDecoration(color: colors.cardBgSecondary, borderRadius: BorderRadius.circular(12)),
               ),
               const SizedBox(height: 20),
-              
-              // 保存按钮
               Container(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                decoration: colors.buttonDecoration(radius: 12),
                 child: CupertinoButton(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   child: const Text('保存', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
@@ -630,31 +565,94 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _icon(IconData icon, Color color) {
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(8)),
-      child: Icon(icon, color: Colors.white, size: 18),
+  void _showChangePasswordSheet() {
+    final oldPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    bool isLoading = false;
+    String? errorMessage;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors(isDark);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: colors.cardBg,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: colors.divider, borderRadius: BorderRadius.circular(2)))),
+                const SizedBox(height: 20),
+                Text('修改密码', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colors.textPrimary)),
+                const SizedBox(height: 20),
+                _buildPasswordField(oldPasswordController, '当前密码', colors),
+                const SizedBox(height: 12),
+                _buildPasswordField(newPasswordController, '新密码（至少6位）', colors),
+                const SizedBox(height: 12),
+                _buildPasswordField(confirmPasswordController, '确认新密码', colors),
+                if (errorMessage != null) ...[
+                  const SizedBox(height: 12),
+                  Text(errorMessage!, style: TextStyle(color: colors.error, fontSize: 14)),
+                ],
+                const SizedBox(height: 20),
+                Container(
+                  decoration: colors.buttonDecoration(radius: 12),
+                  child: CupertinoButton(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    onPressed: isLoading ? null : () async {
+                      if (oldPasswordController.text.isEmpty) { setS(() => errorMessage = '请输入当前密码'); return; }
+                      if (newPasswordController.text.length < 6) { setS(() => errorMessage = '新密码至少6位'); return; }
+                      if (newPasswordController.text != confirmPasswordController.text) { setS(() => errorMessage = '两次密码不一致'); return; }
+                      setS(() { isLoading = true; errorMessage = null; });
+                      try {
+                        await ApiService().changePassword(oldPasswordController.text, newPasswordController.text);
+                        if (ctx.mounted) {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('密码修改成功'), backgroundColor: colors.success));
+                        }
+                      } catch (e) {
+                        setS(() { isLoading = false; errorMessage = '当前密码错误'; });
+                      }
+                    },
+                    child: isLoading
+                        ? const CupertinoActivityIndicator(color: Colors.white)
+                        : const Text('确认修改', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+                SizedBox(height: MediaQuery.of(ctx).padding.bottom + 10),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
-  String _getThemeModeText(ThemeMode mode) {
-    switch (mode) {
-      case ThemeMode.light:
-        return '浅色';
-      case ThemeMode.dark:
-        return '深色';
-      case ThemeMode.system:
-        return '跟随系统';
-    }
+  Widget _buildPasswordField(TextEditingController controller, String placeholder, AppColors colors) {
+    return CupertinoTextField(
+      controller: controller,
+      placeholder: placeholder,
+      obscureText: true,
+      padding: const EdgeInsets.all(14),
+      style: TextStyle(color: colors.textPrimary),
+      placeholderStyle: TextStyle(color: colors.textTertiary),
+      decoration: BoxDecoration(color: colors.cardBgSecondary, borderRadius: BorderRadius.circular(12)),
+    );
   }
 
-  void _showThemePicker() {
-    final currentMode = ref.read(themeModeProvider);
+  void _showLogoutDialog() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF2C2C2E) : Colors.white;
-    final textColor = isDark ? Colors.white : Colors.black;
+    final colors = AppColors(isDark);
     
     showModalBottomSheet(
       context: context,
@@ -662,8 +660,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       builder: (ctx) => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          color: colors.cardBg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -672,131 +670,81 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[400],
+                color: colors.divider,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const SizedBox(height: 20),
-            Text('选择主题', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
-            const SizedBox(height: 20),
-            _buildThemeOption(
-              ctx,
-              icon: Icons.light_mode_rounded,
-              title: '浅色模式',
-              subtitle: '始终使用浅色主题',
-              isSelected: currentMode == ThemeMode.light,
-              onTap: () {
-                ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.light);
-                Navigator.pop(ctx);
-              },
-              isDark: isDark,
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: colors.error.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(Icons.logout_rounded, color: colors.error, size: 32),
             ),
-            const SizedBox(height: 12),
-            _buildThemeOption(
-              ctx,
-              icon: Icons.dark_mode_rounded,
-              title: '深色模式',
-              subtitle: '始终使用深色主题',
-              isSelected: currentMode == ThemeMode.dark,
-              onTap: () {
-                ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.dark);
-                Navigator.pop(ctx);
-              },
-              isDark: isDark,
-            ),
-            const SizedBox(height: 12),
-            _buildThemeOption(
-              ctx,
-              icon: Icons.brightness_auto_rounded,
-              title: '跟随系统',
-              subtitle: '自动适应系统主题设置',
-              isSelected: currentMode == ThemeMode.system,
-              onTap: () {
-                ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.system);
-                Navigator.pop(ctx);
-              },
-              isDark: isDark,
+            const SizedBox(height: 16),
+            Text('退出登录', style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: colors.textPrimary,
+            )),
+            const SizedBox(height: 8),
+            Text('确定要退出当前账号吗？', style: TextStyle(
+              fontSize: 15,
+              color: colors.textSecondary,
+            )),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(ctx),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: colors.cardBgSecondary,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Text('取消', style: TextStyle(
+                          color: colors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        )),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      await ref.read(authProvider.notifier).logout();
+                      if (mounted) Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: colors.error,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Center(
+                        child: Text('退出', style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        )),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
             SizedBox(height: MediaQuery.of(ctx).padding.bottom + 10),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildThemeOption(
-    BuildContext ctx, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required bool isSelected,
-    required VoidCallback onTap,
-    required bool isDark,
-  }) {
-    final selectedColor = const Color(0xFF007AFF);
-    final bgColor = isSelected 
-        ? selectedColor.withOpacity(0.1)
-        : (isDark ? const Color(0xFF3A3A3C) : Colors.grey[100]);
-    final textColor = isDark ? Colors.white : Colors.black;
-    final subtitleColor = isDark ? const Color(0xFF8E8E93) : Colors.grey[600];
-    
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(14),
-          border: isSelected ? Border.all(color: selectedColor, width: 2) : null,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: isSelected ? selectedColor : (isDark ? const Color(0xFF48484A) : Colors.grey[200]),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.grey[600]), size: 24),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textColor)),
-                  const SizedBox(height: 2),
-                  Text(subtitle, style: TextStyle(fontSize: 13, color: subtitleColor)),
-                ],
-              ),
-            ),
-            if (isSelected)
-              Icon(Icons.check_circle_rounded, color: selectedColor, size: 24),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showLogoutDialog() {
-    showCupertinoDialog(
-      context: context,
-      builder: (ctx) => CupertinoAlertDialog(
-        title: const Text('退出登录'),
-        content: const Text('确定要退出登录吗？'),
-        actions: [
-          CupertinoDialogAction(child: const Text('取消'), onPressed: () => Navigator.pop(ctx)),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            child: const Text('退出'),
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await ref.read(authProvider.notifier).logout();
-              if (mounted) Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-            },
-          ),
-        ],
       ),
     );
   }

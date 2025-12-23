@@ -2,9 +2,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../config/colors.dart';
 import '../models/plan.dart';
 import '../providers/plan_provider.dart';
+import '../services/notification_service.dart';
 
 class PlanScreen extends ConsumerStatefulWidget {
   const PlanScreen({super.key});
@@ -14,83 +16,131 @@ class PlanScreen extends ConsumerStatefulWidget {
 }
 
 class _PlanScreenState extends ConsumerState<PlanScreen> {
+  final _notificationService = NotificationService();
+  
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref.read(planProvider.notifier).loadPlans());
+    Future.microtask(() async {
+      await ref.read(planProvider.notifier).loadPlans();
+      _checkAndScheduleReminder();
+    });
+  }
+  
+  // 检查并设置计划提醒
+  Future<void> _checkAndScheduleReminder() async {
+    final planState = ref.read(planProvider);
+    final plans = planState.plans;
+    
+    if (plans.isEmpty) {
+      await _notificationService.cancelPlanReminder();
+      return;
+    }
+    
+    final allCompleted = plans.every((p) => p.isCompleted);
+    
+    if (allCompleted) {
+      // 全部完成，取消提醒
+      await _notificationService.cancelPlanReminder();
+    } else {
+      // 还有未完成的，设置提醒
+      final prefs = await SharedPreferences.getInstance();
+      final userName = prefs.getString('user_nickname') ?? prefs.getString('user_name');
+      await _notificationService.schedulePlanReminder(userName: userName);
+    }
   }
 
   void _showAddPlanSheet() {
     final controller = TextEditingController();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors(isDark);
+    
     showCupertinoModalPopup(
       context: context,
       builder: (ctx) => Container(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom + 20, top: 20, left: 20, right: 20),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+          top: 20, left: 24, right: 24,
+        ),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF8F9FF), Color(0xFFF0F4FF)],
-          ),
+          color: colors.cardBg,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)))),
-            const SizedBox(height: 16),
-            ShaderMask(
-              shaderCallback: (b) => const LinearGradient(colors: [Color(0xFF667EEA), Color(0xFF764BA2)]).createShader(b),
-              child: const Text('添加新计划', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: colors.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
+            Text(
+              '添加新计划',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: colors.textPrimary,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 20),
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [BoxShadow(color: const Color(0xFF667EEA).withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))],
+                color: colors.cardBgSecondary,
+                borderRadius: BorderRadius.circular(12),
               ),
               child: CupertinoTextField(
                 controller: controller,
                 placeholder: '输入计划内容...',
+                placeholderStyle: TextStyle(color: colors.textTertiary),
                 padding: const EdgeInsets.all(16),
                 maxLines: 3,
                 autofocus: true,
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
+                style: TextStyle(color: colors.textPrimary, fontSize: 16),
+                decoration: BoxDecoration(
+                  color: colors.cardBgSecondary,
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             Row(
               children: [
                 Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: const Color(0xFF667EEA)),
-                      borderRadius: BorderRadius.circular(12),
+                  child: CupertinoButton(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    color: colors.cardBgSecondary,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Text(
+                      '取消',
+                      style: TextStyle(color: colors.textSecondary, fontWeight: FontWeight.w500),
                     ),
-                    child: CupertinoButton(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: const Text('取消', style: TextStyle(color: Color(0xFF667EEA))),
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
+                    onPressed: () => Navigator.pop(ctx),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Container(
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [Color(0xFF667EEA), Color(0xFF764BA2)]),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [BoxShadow(color: const Color(0xFF667EEA).withOpacity(0.4), blurRadius: 10, offset: const Offset(0, 4))],
-                    ),
+                    decoration: colors.buttonDecoration(radius: 12),
                     child: CupertinoButton(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: const Text('添加', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      child: const Text(
+                        '添加',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                      ),
                       onPressed: () async {
                         if (controller.text.isNotEmpty) {
                           await ref.read(planProvider.notifier).createPlan(controller.text);
-                          if (mounted) Navigator.pop(ctx);
+                          if (mounted) {
+                            Navigator.pop(ctx);
+                            _checkAndScheduleReminder();
+                          }
                         }
                       },
                     ),
@@ -106,34 +156,64 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
 
   void _showDatePicker() {
     final planState = ref.read(planProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors(isDark);
+    DateTime tempDate = planState.selectedDate;
+    
     showCupertinoModalPopup(
       context: context,
       builder: (ctx) => Container(
-        height: 300,
-        decoration: const BoxDecoration(
-          color: CupertinoColors.systemBackground,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        height: 340,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: colors.cardBg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(border: Border(bottom: BorderSide(color: CupertinoColors.separator.resolveFrom(ctx)))),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  CupertinoButton(child: const Text('取消'), onPressed: () => Navigator.pop(ctx)),
-                  CupertinoButton(child: const Text('确定'), onPressed: () => Navigator.pop(ctx)),
-                ],
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colors.divider,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  child: Text('取消', style: TextStyle(color: colors.textSecondary)),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+                Text('选择日期', style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: colors.textPrimary,
+                )),
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  child: Text('确定', style: TextStyle(
+                    color: colors.primary,
+                    fontWeight: FontWeight.w600,
+                  )),
+                  onPressed: () {
+                    ref.read(planProvider.notifier).setSelectedDate(tempDate);
+                    Navigator.pop(ctx);
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
             Expanded(
               child: CupertinoDatePicker(
                 mode: CupertinoDatePickerMode.date,
                 initialDateTime: planState.selectedDate,
-                minimumDate: DateTime.now(),
+                minimumDate: DateTime.now().subtract(const Duration(days: 365)),
                 maximumDate: DateTime.now().add(const Duration(days: 365)),
-                onDateTimeChanged: (date) => ref.read(planProvider.notifier).setSelectedDate(date),
+                onDateTimeChanged: (date) => tempDate = date,
               ),
             ),
           ],
@@ -148,139 +228,130 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
     final dateFormat = DateFormat('M月d日 EEEE', 'zh_CN');
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colors = AppColors(isDark);
-    final bgColors = isDark 
-        ? [const Color(0xFF1C1C1E), const Color(0xFF1C1C1E), const Color(0xFF1C1C1E)]
-        : [const Color(0xFFF0F4FF), const Color(0xFFFAFBFF), Colors.white];
-    final textColor = isDark ? Colors.white : Colors.grey[800];
 
     return CupertinoPageScaffold(
       child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: bgColors,
-          ),
-        ),
+        color: colors.scaffoldBg,
         child: SafeArea(
           child: Column(
             children: [
-              // 自定义导航栏
+              // 顶部导航
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    ShaderMask(
-                      shaderCallback: (b) => LinearGradient(colors: colors.primaryGradient).createShader(b),
-                      child: const Text('每日计划', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
+                    Text(
+                      '每日计划',
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: colors.textPrimary,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                     Container(
-                      decoration: colors.gradientDecoration(colors.primaryGradient, radius: 12),
+                      decoration: colors.circleButtonDecoration(shadowColor: colors.primary),
                       child: CupertinoButton(
-                        padding: const EdgeInsets.all(10),
+                        padding: const EdgeInsets.all(12),
                         minSize: 0,
-                        child: const Icon(CupertinoIcons.calendar, color: Colors.white, size: 20),
+                        child: Icon(CupertinoIcons.calendar, color: colors.primary, size: 22),
                         onPressed: _showDatePicker,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               // 日期卡片
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: colors.primaryGradient,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: colors.specialCardDecoration(color: colors.cardBg),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: colors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(CupertinoIcons.calendar_today, color: colors.primary, size: 26),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              dateFormat.format(planState.selectedDate),
+                              style: TextStyle(
+                                color: colors.textPrimary,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              '${planState.plans.length} 个计划',
+                              style: TextStyle(color: colors.textSecondary, fontSize: 14),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // 完成进度
+                      _buildProgressIndicator(planState.plans, colors),
+                    ],
                   ),
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: [BoxShadow(color: colors.primaryGradient.first.withOpacity(colors.shadowOpacity), blurRadius: 20, offset: const Offset(0, 10))],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
-                      child: const Icon(CupertinoIcons.calendar_today, color: Colors.white, size: 24),
-                    ),
-                    const SizedBox(width: 16),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(dateFormat.format(planState.selectedDate), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 4),
-                        Text('${planState.plans.length} 个计划', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14)),
-                      ],
-                    ),
-                  ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               // 计划列表
               Expanded(
                 child: planState.isLoading
                     ? const Center(child: CupertinoActivityIndicator())
                     : planState.plans.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(24),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(colors: [colors.primaryGradient.first.withOpacity(0.1), colors.primaryGradient.last.withOpacity(0.1)]),
-                                    borderRadius: BorderRadius.circular(24),
-                                  ),
-                                  child: ShaderMask(
-                                    shaderCallback: (b) => LinearGradient(colors: colors.primaryGradient).createShader(b),
-                                    child: const Icon(CupertinoIcons.doc_text, size: 48, color: Colors.white),
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                ShaderMask(
-                                  shaderCallback: (b) => LinearGradient(colors: colors.primaryGradient).createShader(b),
-                                  child: const Text('暂无计划', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.white)),
-                                ),
-                                const SizedBox(height: 6),
-                                Text('点击下方按钮添加', style: TextStyle(color: isDark ? const Color(0xFF8E8E93) : Colors.grey[500], fontSize: 14)),
-                              ],
-                            ),
-                          )
+                        ? _buildEmptyState(colors)
                         : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
                             itemCount: planState.plans.length,
                             itemBuilder: (ctx, i) {
                               final plan = planState.plans[i];
                               return _PlanTile(
                                 plan: plan,
-                                isDark: isDark,
                                 colors: colors,
-                                onToggle: () => ref.read(planProvider.notifier).togglePlanStatus(plan),
-                                onDelete: () => ref.read(planProvider.notifier).deletePlan(plan.id!),
+                                onToggle: () async {
+                                  await ref.read(planProvider.notifier).togglePlanStatus(plan);
+                                  _checkAndScheduleReminder();
+                                },
+                                onDelete: () async {
+                                  await ref.read(planProvider.notifier).deletePlan(plan.id!);
+                                  _checkAndScheduleReminder();
+                                },
                               );
                             },
                           ),
               ),
               // 添加按钮
               Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(24),
                 child: Container(
                   width: double.infinity,
-                  decoration: colors.gradientDecoration(colors.primaryGradient),
+                  decoration: colors.buttonDecoration(radius: 12),
                   child: CupertinoButton(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     onPressed: _showAddPlanSheet,
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(CupertinoIcons.add, size: 20, color: Colors.white),
                         SizedBox(width: 8),
-                        Text('添加计划', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
+                        Text(
+                          '添加计划',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16),
+                        ),
                       ],
                     ),
                   ),
@@ -292,40 +363,97 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
       ),
     );
   }
+
+  Widget _buildProgressIndicator(List<Plan> plans, AppColors colors) {
+    if (plans.isEmpty) return const SizedBox();
+    final completed = plans.where((p) => p.isCompleted).length;
+    final progress = completed / plans.length;
+    
+    return SizedBox(
+      width: 54,
+      height: 54,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox(
+            width: 54,
+            height: 54,
+            child: CircularProgressIndicator(
+              value: progress,
+              strokeWidth: 5,
+              backgroundColor: colors.divider,
+              valueColor: AlwaysStoppedAnimation<Color>(colors.success),
+            ),
+          ),
+          Text(
+            '$completed/${plans.length}',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: colors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(AppColors colors) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: colors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Icon(CupertinoIcons.doc_text, size: 48, color: colors.primary),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            '暂无计划',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: colors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '点击下方按钮添加新计划',
+            style: TextStyle(color: colors.textSecondary, fontSize: 14),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _PlanTile extends StatelessWidget {
   final Plan plan;
-  final bool isDark;
   final AppColors colors;
   final VoidCallback onToggle;
   final VoidCallback onDelete;
 
-  const _PlanTile({required this.plan, required this.isDark, required this.colors, required this.onToggle, required this.onDelete});
+  const _PlanTile({
+    required this.plan,
+    required this.colors,
+    required this.onToggle,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final cardBgColors = isDark
-        ? (plan.isCompleted 
-            ? [const Color(0xFF1E3A2F), const Color(0xFF1E3A2F)]
-            : [const Color(0xFF2C2C2E), const Color(0xFF2C2C2E)])
-        : (plan.isCompleted
-            ? [const Color(0xFFE8F5E9), const Color(0xFFC8E6C9)]
-            : [Colors.white, const Color(0xFFF8FAFF)]);
-    final textColor = isDark 
-        ? (plan.isCompleted ? const Color(0xFF8E8E93) : Colors.white)
-        : (plan.isCompleted ? Colors.grey[500] : Colors.grey[800]);
-    final checkGradient = colors.greenGradient;
-    final borderColor = colors.primary;
-    
     return Dismissible(
       key: Key(plan.id.toString()),
       direction: DismissDirection.endToStart,
       background: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          gradient: LinearGradient(colors: colors.redGradient),
-          borderRadius: BorderRadius.circular(16),
+          color: colors.red,
+          borderRadius: BorderRadius.circular(12),
         ),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
@@ -334,45 +462,37 @@ class _PlanTile extends StatelessWidget {
       onDismissed: (_) => onDelete(),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: cardBgColors,
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: (plan.isCompleted ? colors.green : colors.primary).withOpacity(colors.shadowOpacity * 0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+        decoration: colors.cardDecoration(radius: 12),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             onTap: onToggle,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
+                  // 复选框
                   GestureDetector(
                     onTap: onToggle,
                     child: Container(
-                      width: 28, height: 28,
+                      width: 26,
+                      height: 26,
                       decoration: BoxDecoration(
-                        gradient: plan.isCompleted ? LinearGradient(colors: checkGradient) : null,
-                        color: plan.isCompleted ? null : Colors.transparent,
+                        color: plan.isCompleted ? colors.success : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: plan.isCompleted ? Colors.transparent : borderColor, width: 2),
-                        boxShadow: plan.isCompleted ? [BoxShadow(color: checkGradient.first.withOpacity(colors.shadowOpacity), blurRadius: 8, offset: const Offset(0, 3))] : null,
+                        border: Border.all(
+                          color: plan.isCompleted ? colors.success : colors.textTertiary,
+                          width: 2,
+                        ),
                       ),
-                      child: plan.isCompleted ? const Icon(CupertinoIcons.checkmark, size: 18, color: Colors.white) : null,
+                      child: plan.isCompleted
+                          ? const Icon(CupertinoIcons.checkmark, size: 16, color: Colors.white)
+                          : null,
                     ),
                   ),
                   const SizedBox(width: 14),
+                  // 内容
                   Expanded(
                     child: Text(
                       plan.content,
@@ -380,7 +500,7 @@ class _PlanTile extends StatelessWidget {
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                         decoration: plan.isCompleted ? TextDecoration.lineThrough : null,
-                        color: textColor,
+                        color: plan.isCompleted ? colors.textTertiary : colors.textPrimary,
                       ),
                     ),
                   ),

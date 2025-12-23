@@ -475,10 +475,15 @@ class _WaterScreenState extends State<WaterScreen> with SingleTickerProviderStat
   }
 
   Future<void> _scheduleReminder() async {
+    // 获取用户名
+    final prefs = await SharedPreferences.getInstance();
+    final userName = prefs.getString('user_nickname') ?? prefs.getString('user_name');
+    
     await _notificationService.scheduleWaterReminder(
       startHour: _startTime.hour,
       startMinute: _startTime.minute,
       intervalMinutes: _intervalMinutes,
+      userName: userName,
     );
   }
 

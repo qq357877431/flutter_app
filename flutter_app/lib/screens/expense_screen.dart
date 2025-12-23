@@ -18,11 +18,11 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
   int? _selectedMonth;
   
   final _categories = [
-    {'name': '餐饮', 'icon': CupertinoIcons.cart_fill, 'colors': [const Color(0xFFFF9500), const Color(0xFFFFB347)]},
-    {'name': '交通', 'icon': CupertinoIcons.car_fill, 'colors': [const Color(0xFF4FACFE), const Color(0xFF00F2FE)]},
-    {'name': '购物', 'icon': CupertinoIcons.bag_fill, 'colors': [const Color(0xFFFA709A), const Color(0xFFFEE140)]},
-    {'name': '娱乐', 'icon': CupertinoIcons.game_controller_solid, 'colors': [const Color(0xFF667EEA), const Color(0xFF764BA2)]},
-    {'name': '其他', 'icon': CupertinoIcons.ellipsis_circle_fill, 'colors': [const Color(0xFF8E8E93), const Color(0xFFAEAEB2)]},
+    {'name': '餐饮', 'icon': CupertinoIcons.cart_fill, 'colors': [const Color(0xFFF59E0B), const Color(0xFFD97706)]},
+    {'name': '交通', 'icon': CupertinoIcons.car_fill, 'colors': [const Color(0xFF3B82F6), const Color(0xFF2563EB)]},
+    {'name': '购物', 'icon': CupertinoIcons.bag_fill, 'colors': [const Color(0xFFEC4899), const Color(0xFFDB2777)]},
+    {'name': '娱乐', 'icon': CupertinoIcons.game_controller_solid, 'colors': [const Color(0xFF8B5CF6), const Color(0xFF7C3AED)]},
+    {'name': '其他', 'icon': CupertinoIcons.ellipsis_circle_fill, 'colors': [const Color(0xFF64748B), const Color(0xFF475569)]},
   ];
 
   @override
@@ -55,33 +55,48 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
     final now = DateTime.now();
     int tempYear = _selectedYear ?? now.year;
     int tempMonth = _selectedMonth ?? now.month;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors(isDark);
     
     showCupertinoModalPopup(
       context: context,
       builder: (ctx) => Container(
-        height: 320,
-        color: CupertinoColors.systemBackground.resolveFrom(ctx),
+        height: 380,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: colors.cardBg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
         child: Column(
           children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colors.divider,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 CupertinoButton(
-                  child: const Text('取消'),
+                  padding: EdgeInsets.zero,
+                  child: Text('取消', style: TextStyle(color: colors.textSecondary)),
                   onPressed: () => Navigator.pop(ctx),
                 ),
+                Text('筛选日期', style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: colors.textPrimary,
+                )),
                 CupertinoButton(
-                  child: const Text('重置', style: TextStyle(color: Colors.orange)),
-                  onPressed: () {
-                    setState(() {
-                      _selectedYear = null;
-                      _selectedMonth = null;
-                    });
-                    Navigator.pop(ctx);
-                  },
-                ),
-                CupertinoButton(
-                  child: const Text('确定'),
+                  padding: EdgeInsets.zero,
+                  child: Text('确定', style: TextStyle(
+                    color: colors.primary,
+                    fontWeight: FontWeight.w600,
+                  )),
                   onPressed: () {
                     setState(() {
                       _selectedYear = tempYear;
@@ -92,13 +107,33 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 10),
+            // 重置按钮
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedYear = null;
+                  _selectedMonth = null;
+                });
+                Navigator.pop(ctx);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text('重置', style: TextStyle(color: colors.orange, fontSize: 13, fontWeight: FontWeight.w500)),
+              ),
+            ),
+            const SizedBox(height: 16),
             Expanded(
               child: Row(
                 children: [
                   // 年份选择
                   Expanded(
                     child: CupertinoPicker(
-                      itemExtent: 40,
+                      itemExtent: 44,
                       scrollController: FixedExtentScrollController(
                         initialItem: tempYear - 2020,
                       ),
@@ -107,14 +142,14 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                       },
                       children: List.generate(
                         now.year - 2020 + 2,
-                        (i) => Center(child: Text('${2020 + i}年')),
+                        (i) => Center(child: Text('${2020 + i}年', style: TextStyle(color: colors.textPrimary, fontSize: 18))),
                       ),
                     ),
                   ),
                   // 月份选择
                   Expanded(
                     child: CupertinoPicker(
-                      itemExtent: 40,
+                      itemExtent: 44,
                       scrollController: FixedExtentScrollController(
                         initialItem: tempMonth - 1,
                       ),
@@ -123,7 +158,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                       },
                       children: List.generate(
                         12,
-                        (i) => Center(child: Text('${i + 1}月')),
+                        (i) => Center(child: Text('${i + 1}月', style: TextStyle(color: colors.textPrimary, fontSize: 18))),
                       ),
                     ),
                   ),
@@ -140,6 +175,8 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
     final amountController = TextEditingController();
     final noteController = TextEditingController();
     String selectedCategory = _categories[0]['name'] as String;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors(isDark);
 
     showCupertinoModalPopup(
       context: context,
@@ -147,73 +184,57 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
         builder: (ctx, setS) => Container(
           padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom + 20, top: 20, left: 20, right: 20),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFF0FFF4), Color(0xFFE8F5E9)],
-            ),
+            color: colors.cardBg,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)))),
+              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: colors.divider, borderRadius: BorderRadius.circular(2)))),
               const SizedBox(height: 16),
-              ShaderMask(
-                shaderCallback: (b) => const LinearGradient(colors: [Color(0xFF43E97B), Color(0xFF38F9D7)]).createShader(b),
-                child: const Text('记一笔', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-              ),
+              Text('记一笔', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: colors.textPrimary)),
               const SizedBox(height: 16),
               Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [BoxShadow(color: const Color(0xFF43E97B).withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))],
-                ),
+                decoration: colors.cardDecoration(color: colors.cardBgSecondary, radius: 14),
                 child: CupertinoTextField(
                   controller: amountController,
                   placeholder: '0.00',
                   prefix: Padding(
                     padding: const EdgeInsets.only(left: 16),
-                    child: ShaderMask(
-                      shaderCallback: (b) => const LinearGradient(colors: [Color(0xFF43E97B), Color(0xFF38F9D7)]).createShader(b),
-                      child: const Text('¥', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
-                    ),
+                    child: Text('¥', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: colors.green)),
                   ),
                   padding: const EdgeInsets.all(16),
-                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: colors.textPrimary),
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   autofocus: true,
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
+                  decoration: BoxDecoration(color: colors.cardBgSecondary, borderRadius: BorderRadius.circular(14)),
                 ),
               ),
               const SizedBox(height: 16),
-              Text('分类', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey[600])),
+              Text('分类', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: colors.textSecondary)),
               const SizedBox(height: 10),
               Wrap(
-                spacing: 10,
-                runSpacing: 10,
+                spacing: 8,
+                runSpacing: 8,
                 children: _categories.map((cat) {
                   final isSelected = selectedCategory == cat['name'];
-                  final colors = cat['colors'] as List<Color>;
+                  final catColors = cat['colors'] as List<Color>;
                   return GestureDetector(
                     onTap: () => setS(() => selectedCategory = cat['name'] as String),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        gradient: isSelected ? LinearGradient(colors: colors) : null,
-                        color: isSelected ? null : Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: isSelected ? [BoxShadow(color: colors.first.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 3))] : null,
-                        border: isSelected ? null : Border.all(color: Colors.grey[300]!),
+                        color: isSelected ? catColors.first : colors.cardBgSecondary,
+                        borderRadius: BorderRadius.circular(16),
+                        border: isSelected ? null : Border.all(color: colors.divider),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(cat['icon'] as IconData, size: 18, color: isSelected ? Colors.white : colors.first),
-                          const SizedBox(width: 6),
-                          Text(cat['name'] as String, style: TextStyle(color: isSelected ? Colors.white : Colors.grey[700], fontWeight: isSelected ? FontWeight.w600 : null)),
+                          Icon(cat['icon'] as IconData, size: 16, color: isSelected ? Colors.white : catColors.first),
+                          const SizedBox(width: 4),
+                          Text(cat['name'] as String, style: TextStyle(fontSize: 13, color: isSelected ? Colors.white : colors.textSecondary, fontWeight: isSelected ? FontWeight.w600 : null)),
                         ],
                       ),
                     ),
@@ -222,25 +243,19 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
               ),
               const SizedBox(height: 16),
               Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 3))],
-                ),
+                decoration: colors.cardDecoration(color: colors.cardBgSecondary, radius: 12),
                 child: CupertinoTextField(
                   controller: noteController,
                   placeholder: '添加备注...',
+                  placeholderStyle: TextStyle(color: colors.textTertiary),
                   padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+                  style: TextStyle(color: colors.textPrimary),
+                  decoration: BoxDecoration(color: colors.cardBgSecondary, borderRadius: BorderRadius.circular(12)),
                 ),
               ),
               const SizedBox(height: 20),
               Container(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [Color(0xFF43E97B), Color(0xFF38F9D7)]),
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [BoxShadow(color: const Color(0xFF43E97B).withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 6))],
-                ),
+                decoration: colors.buttonDecoration(gradient: colors.greenGradient, radius: 14),
                 child: CupertinoButton(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   child: const Text('保存', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 17)),
@@ -288,10 +303,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
                 child: Row(
                   children: [
-                    ShaderMask(
-                      shaderCallback: (b) => LinearGradient(colors: colors.greenGradient).createShader(b),
-                      child: const Text('消费记录', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
-                    ),
+                    Text('消费记录', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: colors.textPrimary)),
                     const Spacer(),
                     // 筛选按钮
                     GestureDetector(
@@ -395,10 +407,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: [
-                    ShaderMask(
-                      shaderCallback: (b) => LinearGradient(colors: colors.greenGradient).createShader(b),
-                      child: const Text('消费明细', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
-                    ),
+                    Text('消费明细', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: colors.textPrimary)),
                   ],
                 ),
               ),
@@ -415,23 +424,17 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(24),
                                   decoration: BoxDecoration(
-                                    gradient: LinearGradient(colors: [colors.greenGradient.first.withOpacity(0.1), colors.greenGradient.last.withOpacity(0.1)]),
+                                    color: colors.green.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(24),
                                   ),
-                                  child: ShaderMask(
-                                    shaderCallback: (b) => LinearGradient(colors: colors.greenGradient).createShader(b),
-                                    child: const Icon(CupertinoIcons.money_dollar, size: 48, color: Colors.white),
-                                  ),
+                                  child: Icon(CupertinoIcons.money_dollar, size: 48, color: colors.green),
                                 ),
                                 const SizedBox(height: 16),
-                                ShaderMask(
-                                  shaderCallback: (b) => LinearGradient(colors: colors.greenGradient).createShader(b),
-                                  child: Text(
-                                    (_selectedYear != null || _selectedMonth != null)
-                                        ? '该时间段暂无消费记录'
-                                        : '暂无消费记录',
-                                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Colors.white),
-                                  ),
+                                Text(
+                                  (_selectedYear != null || _selectedMonth != null)
+                                      ? '该时间段暂无消费记录'
+                                      : '暂无消费记录',
+                                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: colors.textSecondary),
                                 ),
                               ],
                             ),
@@ -567,10 +570,7 @@ class _ExpenseTile extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                ShaderMask(
-                  shaderCallback: (b) => LinearGradient(colors: colors.redGradient).createShader(b),
-                  child: Text('-${currencyFormat.format(expense.amount)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
-                ),
+                Text('-${currencyFormat.format(expense.amount)}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colors.red)),
                 const SizedBox(height: 3),
                 Text(dateFormat.format(expense.createdAt), style: TextStyle(color: secondaryTextColor, fontSize: 12)),
               ],

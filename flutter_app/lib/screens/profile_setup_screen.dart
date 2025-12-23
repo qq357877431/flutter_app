@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../config/colors.dart';
 import '../providers/auth_provider.dart';
 
 class ProfileSetupScreen extends ConsumerStatefulWidget {
@@ -15,7 +16,6 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   String _selectedAvatar = '';
   bool _isLoading = false;
 
-  // 预设头像列表
   final List<String> _avatarOptions = [
     '😀', '😎', '🤖', '👨‍💻', '👩‍💻', '🦊', '🐱', '🐶',
     '🌟', '🚀', '💎', '🎯', '🎨', '🎵', '📚', '💡',
@@ -56,13 +56,10 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF2F2F7);
-    final cardColor = isDark ? const Color(0xFF2C2C2E) : Colors.white;
-    final textSecondary = isDark ? const Color(0xFF8E8E93) : Colors.grey[600];
-    final itemBgColor = isDark ? const Color(0xFF3A3A3C) : Colors.grey[100];
+    final colors = AppColors(isDark);
     
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: colors.scaffoldBg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -70,7 +67,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         actions: [
           TextButton(
             onPressed: _skip,
-            child: Text('跳过', style: TextStyle(color: textSecondary, fontSize: 16)),
+            child: Text('跳过', style: TextStyle(color: colors.textSecondary, fontSize: 16)),
           ),
         ],
       ),
@@ -81,19 +78,19 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 20),
-              ShaderMask(
-                shaderCallback: (b) => const LinearGradient(
-                  colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-                ).createShader(b),
-                child: const Text(
-                  '完善个人信息',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+              Text(
+                '完善个人信息',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: colors.textPrimary,
+                  letterSpacing: 0.5,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 '设置你的昵称和头像，让大家认识你',
-                style: TextStyle(fontSize: 15, color: textSecondary),
+                style: TextStyle(fontSize: 15, color: colors.textSecondary),
               ),
               const SizedBox(height: 40),
               
@@ -104,19 +101,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                     Container(
                       width: 100,
                       height: 100,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-                        ),
-                        borderRadius: BorderRadius.circular(50),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF667EEA).withOpacity(0.4),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
+                      decoration: colors.buttonDecoration(radius: 50),
                       child: Center(
                         child: Text(
                           _selectedAvatar.isEmpty ? '👤' : _selectedAvatar,
@@ -125,19 +110,16 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Text('选择头像', style: TextStyle(color: textSecondary)),
+                    Text('选择头像', style: TextStyle(color: colors.textSecondary)),
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               
               // 头像选项
               Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: cardColor,
-                  borderRadius: BorderRadius.circular(16),
-                ),
+                padding: const EdgeInsets.all(20),
+                decoration: colors.cardDecoration(radius: 16),
                 child: Wrap(
                   spacing: 12,
                   runSpacing: 12,
@@ -150,9 +132,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                         width: 50,
                         height: 50,
                         decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFF667EEA).withOpacity(0.1) : itemBgColor,
+                          color: isSelected ? colors.primary.withOpacity(0.1) : colors.cardBgSecondary,
                           borderRadius: BorderRadius.circular(12),
-                          border: isSelected ? Border.all(color: const Color(0xFF667EEA), width: 2) : null,
+                          border: isSelected ? Border.all(color: colors.primary, width: 2) : null,
                         ),
                         child: Center(
                           child: Text(emoji, style: const TextStyle(fontSize: 28)),
@@ -165,21 +147,25 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               const SizedBox(height: 30),
               
               // 昵称输入
-              Text('昵称', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textSecondary)),
-              const SizedBox(height: 8),
-              Container(
-                decoration: BoxDecoration(
-                  color: cardColor,
-                  borderRadius: BorderRadius.circular(12),
+              Text(
+                '昵称',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: colors.textSecondary,
                 ),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                decoration: colors.cardDecoration(radius: 12),
                 child: CupertinoTextField(
                   controller: _nicknameController,
                   placeholder: '给自己取个名字吧',
                   padding: const EdgeInsets.all(16),
-                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
-                  placeholderStyle: TextStyle(color: textSecondary),
+                  style: TextStyle(color: colors.textPrimary, fontSize: 16),
+                  placeholderStyle: TextStyle(color: colors.textTertiary),
                   decoration: BoxDecoration(
-                    color: cardColor,
+                    color: colors.cardBg,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   maxLength: 20,
@@ -191,19 +177,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
               SizedBox(
                 width: double.infinity,
                 child: Container(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF667EEA).withOpacity(0.4),
-                        blurRadius: 15,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
+                  decoration: colors.buttonDecoration(radius: 12),
                   child: CupertinoButton(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     onPressed: _isLoading ? null : _saveProfile,
@@ -211,7 +185,11 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                         ? const CupertinoActivityIndicator(color: Colors.white)
                         : const Text(
                             '完成设置',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 17),
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 17,
+                            ),
                           ),
                   ),
                 ),
