@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../config/colors.dart';
@@ -13,29 +14,89 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   int _currentIndex = 0;
-  late AnimationController _animationController;
+  late PageController _pageController;
+  late AnimationController _liquidController;
+  
+  double _dragStartX = 0;
+  double _liquidPosition = 0; // 0-3 对应4个tab
+  bool _isDragging = false;
+
+  final List<_NavItemData> _navItems = [
+    _NavItemData('计划', CupertinoIcons.calendar, CupertinoIcons.calendar_today),
+    _NavItemData('记账', CupertinoIcons.money_dollar_circle, CupertinoIcons.money_dollar_circle_fill),
+    _NavItemData('喝水', CupertinoIcons.drop, CupertinoIcons.drop_fill),
+    _NavItemData('设置', CupertinoIcons.gear, CupertinoIcons.gear_solid),
+  ];
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
+    _pageController = PageController(initialPage: _currentIndex);
+    _liquidController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 300),
     );
+    _liquidPosition = _currentIndex.toDouble();
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _pageController.dispose();
+    _liquidController.dispose();
     super.dispose();
   }
 
   void _onTabTapped(int index) {
     if (_currentIndex != index) {
-      setState(() => _currentIndex = index);
-      _animationController.forward(from: 0);
+      setState(() {
+        _currentIndex = index;
+        _liquidPosition = index.toDouble();
+      });
+      _pageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+      );
+      _liquidController.forward(from: 0);
+    }
+  }
+
+  void _onPageChanged(int index) {
+    setState(() {
+      _currentIndex = index;
+      _liquidPosition = index.toDouble();
+    });
+  }
+
+  void _onHorizontalDragStart(DragStartDetails details) {
+    _dragStartX = details.localPosition.dx;
+    _isDragging = true;
+  }
+
+  void _onHorizontalDragUpdate(DragUpdateDetails details, double navWidth) {
+    if (!_isDragging) return;
+    
+    final itemWidth = navWidth / 4;
+    final dx = details.localPosition.dx - _dragStartX;
+    final newPosition = (_currentIndex + dx / itemWidth).clamp(0.0, 3.0);
+    
+    setState(() {
+      _liquidPosition = newPosition;
+    });
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails details) {
+    _isDragging = false;
+    final targetIndex = _liquidPosition.round().clamp(0, 3);
+    
+    if (targetIndex != _currentIndex) {
+      _onTabTapped(targetIndex);
+    } else {
+      setState(() {
+        _liquidPosition = _currentIndex.toDouble();
+      });
     }
   }
 
@@ -43,11 +104,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colors = AppColors(isDark);
+    final tabColors = [colors.primary, colors.green, colors.blue, colors.orange];
     
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
-      body: IndexedStack(
-        index: _currentIndex,
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: _onPageChanged,
+        physics: const BouncingScrollPhysics(),
         children: const [
           PlanScreen(),
           ExpenseScreen(),
@@ -55,63 +119,195 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           SettingsScreen(),
         ],
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: colors.cardBg,
-          border: Border(
-            top: BorderSide(
-              color: colors.divider,
-              width: 0.5,
+      bottomNavigationBar: _LiquidGlassNavBar(
+        currentIndex: _currentIndex,
+        liquidPosition: _liquidPosition,
+        navItems: _navItems,
+        tabColors: tabColors,
+        colors: colors,
+        isDark: isDark,
+        onTabTapped: _onTabTapped,
+        onHorizontalDragStart: _onHorizontalDragStart,
+        onHorizontalDragUpdate: _onHorizontalDragUpdate,
+        onHorizontalDragEnd: _onHorizontalDragEnd,
+      ),
+    );
+  }
+}
+
+class _NavItemData {
+  final String label;
+  final IconData icon;
+  final IconData activeIcon;
+  
+  _NavItemData(this.label, this.icon, this.activeIcon);
+}
+
+class _LiquidGlassNavBar extends StatelessWidget {
+  final int currentIndex;
+  final double liquidPosition;
+  final List<_NavItemData> navItems;
+  final List<Color> tabColors;
+  final AppColors colors;
+  final bool isDark;
+  final Function(int) onTabTapped;
+  final Function(DragStartDetails) onHorizontalDragStart;
+  final Function(DragUpdateDetails, double) onHorizontalDragUpdate;
+  final Function(DragEndDetails) onHorizontalDragEnd;
+
+  const _LiquidGlassNavBar({
+    required this.currentIndex,
+    required this.liquidPosition,
+    required this.navItems,
+    required this.tabColors,
+    required this.colors,
+    required this.isDark,
+    required this.onTabTapped,
+    required this.onHorizontalDragStart,
+    required this.onHorizontalDragUpdate,
+    required this.onHorizontalDragEnd,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark 
+            ? Colors.black.withOpacity(0.6)
+            : Colors.white.withOpacity(0.8),
+        border: Border(
+          top: BorderSide(
+            color: isDark 
+                ? Colors.white.withOpacity(0.1)
+                : Colors.black.withOpacity(0.05),
+            width: 0.5,
+          ),
+        ),
+      ),
+      child: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final navWidth = constraints.maxWidth;
+                final itemWidth = navWidth / 4;
+                
+                return GestureDetector(
+                  onHorizontalDragStart: onHorizontalDragStart,
+                  onHorizontalDragUpdate: (details) => onHorizontalDragUpdate(details, navWidth),
+                  onHorizontalDragEnd: onHorizontalDragEnd,
+                  child: Container(
+                    height: 65,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    child: Stack(
+                      children: [
+                        // 液态玻璃指示器
+                        AnimatedPositioned(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOutCubic,
+                          left: liquidPosition * itemWidth + 8,
+                          top: 4,
+                          child: _LiquidIndicator(
+                            width: itemWidth - 16,
+                            color: tabColors[liquidPosition.round().clamp(0, 3)],
+                            isDark: isDark,
+                          ),
+                        ),
+                        // 导航项
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: List.generate(4, (index) {
+                            final isSelected = currentIndex == index;
+                            final item = navItems[index];
+                            final color = tabColors[index];
+                            
+                            return Expanded(
+                              child: GestureDetector(
+                                onTap: () => onTabTapped(index),
+                                behavior: HitTestBehavior.opaque,
+                                child: _NavItem(
+                                  icon: item.icon,
+                                  activeIcon: item.activeIcon,
+                                  label: item.label,
+                                  isSelected: isSelected,
+                                  color: color,
+                                  colors: colors,
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _NavItem(
-                  index: 0,
-                  currentIndex: _currentIndex,
-                  icon: CupertinoIcons.calendar,
-                  activeIcon: CupertinoIcons.calendar_today,
-                  label: '计划',
-                  color: colors.primary,
-                  colors: colors,
-                  onTap: () => _onTabTapped(0),
-                ),
-                _NavItem(
-                  index: 1,
-                  currentIndex: _currentIndex,
-                  icon: CupertinoIcons.money_dollar_circle,
-                  activeIcon: CupertinoIcons.money_dollar_circle_fill,
-                  label: '记账',
-                  color: colors.green,
-                  colors: colors,
-                  onTap: () => _onTabTapped(1),
-                ),
-                _NavItem(
-                  index: 2,
-                  currentIndex: _currentIndex,
-                  icon: CupertinoIcons.drop,
-                  activeIcon: CupertinoIcons.drop_fill,
-                  label: '喝水',
-                  color: colors.blue,
-                  colors: colors,
-                  onTap: () => _onTabTapped(2),
-                ),
-                _NavItem(
-                  index: 3,
-                  currentIndex: _currentIndex,
-                  icon: CupertinoIcons.gear,
-                  activeIcon: CupertinoIcons.gear_solid,
-                  label: '设置',
-                  color: colors.orange,
-                  colors: colors,
-                  onTap: () => _onTabTapped(3),
-                ),
-              ],
+      ),
+    );
+  }
+}
+
+class _LiquidIndicator extends StatelessWidget {
+  final double width;
+  final Color color;
+  final bool isDark;
+
+  const _LiquidIndicator({
+    required this.width,
+    required this.color,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: 48,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color.withOpacity(isDark ? 0.3 : 0.2),
+            color.withOpacity(isDark ? 0.15 : 0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withOpacity(isDark ? 0.4 : 0.3),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 20,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.white.withOpacity(isDark ? 0.1 : 0.4),
+                  Colors.white.withOpacity(isDark ? 0.05 : 0.1),
+                ],
+              ),
             ),
           ),
         ),
@@ -121,65 +317,54 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 }
 
 class _NavItem extends StatelessWidget {
-  final int index;
-  final int currentIndex;
   final IconData icon;
   final IconData activeIcon;
   final String label;
+  final bool isSelected;
   final Color color;
   final AppColors colors;
-  final VoidCallback onTap;
 
   const _NavItem({
-    required this.index,
-    required this.currentIndex,
     required this.icon,
     required this.activeIcon,
     required this.label,
+    required this.isSelected,
     required this.color,
     required this.colors,
-    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isSelected = currentIndex == index;
-    
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.12) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          transitionBuilder: (child, animation) {
+            return ScaleTransition(
+              scale: animation,
+              child: child,
+            );
+          },
+          child: Icon(
+            isSelected ? activeIcon : icon,
+            key: ValueKey(isSelected),
+            color: isSelected ? color : colors.textTertiary,
+            size: isSelected ? 26 : 24,
+          ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: Icon(
-                isSelected ? activeIcon : icon,
-                key: ValueKey(isSelected),
-                color: isSelected ? color : colors.textTertiary,
-                size: 24,
-              ),
-            ),
-            const SizedBox(height: 4),
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 200),
-              style: TextStyle(
-                fontSize: 11,
-                color: isSelected ? color : colors.textTertiary,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-              child: Text(label),
-            ),
-          ],
+        const SizedBox(height: 4),
+        AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 200),
+          style: TextStyle(
+            fontSize: 11,
+            color: isSelected ? color : colors.textTertiary,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          ),
+          child: Text(label),
         ),
-      ),
+      ],
     );
   }
 }
