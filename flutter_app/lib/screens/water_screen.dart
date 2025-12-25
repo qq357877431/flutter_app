@@ -755,14 +755,33 @@ class _WaterScreenState extends ConsumerState<WaterScreen> with SingleTickerProv
 
   Widget _buildDrinkButton(DrinkType type, AppColors colors) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    // 浅色饮品（牛奶、奶茶等）在浅色主题下需要更深的边框
-    final isLightColor = type.color.computeLuminance() > 0.5;
+    // 计算颜色亮度
+    final luminance = type.color.computeLuminance();
+    final isLightColor = luminance > 0.5;
+    final isDarkColor = luminance < 0.3; // 深色（如咖啡）
+    
+    // 边框颜色
     final borderColor = isDark 
         ? type.color.withOpacity(0.3)
         : (isLightColor ? Colors.grey.withOpacity(0.3) : type.color.withOpacity(0.2));
-    final textColor = isDark 
-        ? type.color 
-        : (isLightColor ? type.color.withRed((type.color.red * 0.7).toInt()).withGreen((type.color.green * 0.7).toInt()).withBlue((type.color.blue * 0.7).toInt()) : type.color);
+    
+    // 文字颜色：深色主题下，深色饮品需要提亮；浅色主题下，浅色饮品需要加深
+    Color textColor;
+    if (isDark) {
+      // 深色主题：深色饮品（咖啡等）文字提亮
+      if (isDarkColor) {
+        textColor = Color.lerp(type.color, Colors.white, 0.4)!; // 提亮40%
+      } else {
+        textColor = type.color;
+      }
+    } else {
+      // 浅色主题：浅色饮品（牛奶、奶茶等）文字加深
+      if (isLightColor) {
+        textColor = Color.lerp(type.color, Colors.black, 0.3)!; // 加深30%
+      } else {
+        textColor = type.color;
+      }
+    }
     
     return GestureDetector(
       onTap: () => _showAddDialog(type),
@@ -780,7 +799,7 @@ class _WaterScreenState extends ConsumerState<WaterScreen> with SingleTickerProv
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(type.icon, color: type.color, size: 28),
+            Icon(type.icon, color: isDark && isDarkColor ? textColor : type.color, size: 28),
             const SizedBox(height: 4),
             Text(type.name, style: TextStyle(
               fontSize: 11,
