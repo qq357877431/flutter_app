@@ -180,24 +180,24 @@ class _LiquidGlassNavBar extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(28),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
+        filter: ImageFilter.blur(sigmaX: 1.5, sigmaY: 1.5),
         child: Container(
           height: 70,
           decoration: BoxDecoration(
-            // 毛玻璃效果：半透明背景
+            // 毛玻璃效果：最大透明度
             color: isDark 
-                ? Colors.black.withOpacity(0.4)
-                : Colors.white.withOpacity(0.65),
+                ? Colors.black.withOpacity(0.05)
+                : Colors.white.withOpacity(0.05),
             borderRadius: BorderRadius.circular(28),
             border: Border.all(
               color: isDark 
-                  ? Colors.white.withOpacity(0.15)
-                  : Colors.white.withOpacity(0.8),
-              width: 1,
+                  ? Colors.white.withOpacity(0.2)
+                  : Colors.white.withOpacity(0.6),
+              width: 0.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.4 : 0.1),
+                color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
                 blurRadius: 20,
                 offset: const Offset(0, 6),
                 spreadRadius: 0,

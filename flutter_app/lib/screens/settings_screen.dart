@@ -127,7 +127,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 _buildSettingCard(colors, children: [
                   _buildSettingItem(
                     icon: Icons.info_rounded, iconBg: colors.orange,
-                    title: '版本', value: '1.5.6', showArrow: false, colors: colors,
+                    title: '版本', value: '1.5.8', showArrow: false, colors: colors,
                   ),
                 ]),
               ]),
