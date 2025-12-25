@@ -19,7 +19,7 @@ class _WaterScreenState extends ConsumerState<WaterScreen> with SingleTickerProv
   final _notificationService = NotificationService();
   List<WaterRecord> _records = [];
   int _todayTotal = 0;
-  final int _dailyGoal = 2000;
+  int _dailyGoal = 2000; // 可自定义
   
   bool _reminderEnabled = false;
   TimeOfDay _startTime = const TimeOfDay(hour: 8, minute: 0);
@@ -30,9 +30,9 @@ class _WaterScreenState extends ConsumerState<WaterScreen> with SingleTickerProv
   final List<DrinkType> _drinkTypes = [
     DrinkType('白开水', Icons.water_drop_rounded, const Color(0xFF42A5F5), 250),
     DrinkType('茶', Icons.emoji_food_beverage_rounded, const Color(0xFF66BB6A), 200),
-    DrinkType('咖啡', Icons.coffee_rounded, const Color(0xFF8D6E63), 150),
-    DrinkType('牛奶', Icons.local_cafe_rounded, const Color(0xFFFFECB3), 250),
-    DrinkType('奶茶', Icons.bubble_chart_rounded, const Color(0xFFD7CCC8), 500),
+    DrinkType('咖啡', Icons.coffee_rounded, const Color(0xFF6D4C41), 150), // 深棕色
+    DrinkType('牛奶', Icons.local_cafe_rounded, const Color(0xFFFFA726), 250), // 橙黄色
+    DrinkType('奶茶', Icons.bubble_chart_rounded, const Color(0xFFBCAAA4), 500), // 深一点的棕色
     DrinkType('果汁', Icons.local_bar_rounded, const Color(0xFFFFB74D), 300),
     DrinkType('饮料', Icons.local_drink_rounded, const Color(0xFFEF5350), 330),
     DrinkType('其他', Icons.add_circle_outline_rounded, const Color(0xFF90A4AE), 200),
@@ -73,6 +73,7 @@ class _WaterScreenState extends ConsumerState<WaterScreen> with SingleTickerProv
       minute: prefs.getInt('water_start_minute') ?? 0,
     );
     _intervalMinutes = prefs.getInt('water_interval') ?? 60;
+    _dailyGoal = prefs.getInt('water_daily_goal') ?? 2000;
     
     setState(() {
       _records = records;
@@ -88,6 +89,7 @@ class _WaterScreenState extends ConsumerState<WaterScreen> with SingleTickerProv
     await prefs.setInt('water_start_hour', _startTime.hour);
     await prefs.setInt('water_start_minute', _startTime.minute);
     await prefs.setInt('water_interval', _intervalMinutes);
+    await prefs.setInt('water_daily_goal', _dailyGoal);
   }
 
   void _addRecord(DrinkType type, int amount) {
@@ -207,7 +209,7 @@ class _WaterScreenState extends ConsumerState<WaterScreen> with SingleTickerProv
         builder: (ctx, setSheetState) => Material(
           color: Colors.transparent,
           child: Container(
-            height: 420,
+            height: 500,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: colors.cardBg,
@@ -230,7 +232,7 @@ class _WaterScreenState extends ConsumerState<WaterScreen> with SingleTickerProv
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('喝水提醒', style: TextStyle(
+                    Text('喝水设置', style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: colors.textPrimary,
@@ -250,6 +252,14 @@ class _WaterScreenState extends ConsumerState<WaterScreen> with SingleTickerProv
                   ],
                 ),
                 const SizedBox(height: 24),
+                _buildSettingItem(
+                  colors,
+                  '每日目标',
+                  '$_dailyGoal ml',
+                  null,
+                  onTap: () => _pickDailyGoal(ctx, setSheetState),
+                ),
+                const SizedBox(height: 16),
                 _buildSettingItem(
                   colors,
                   '开启提醒',
@@ -464,6 +474,51 @@ class _WaterScreenState extends ConsumerState<WaterScreen> with SingleTickerProv
                 },
                 children: intervals.map((i) => Center(
                   child: Text('$i 分钟', style: TextStyle(
+                    fontSize: 20,
+                    color: colors.textPrimary,
+                  )),
+                )).toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _pickDailyGoal(BuildContext ctx, StateSetter setSheetState) {
+    final goals = [1000, 1500, 2000, 2500, 3000, 3500, 4000];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors(isDark);
+    
+    showCupertinoModalPopup(
+      context: ctx,
+      builder: (c) => Container(
+        height: 300,
+        decoration: BoxDecoration(
+          color: colors.cardBg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 16),
+            Text('选择每日目标', style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: colors.textPrimary,
+            )),
+            Expanded(
+              child: CupertinoPicker(
+                itemExtent: 44,
+                scrollController: FixedExtentScrollController(
+                  initialItem: goals.indexOf(_dailyGoal).clamp(0, goals.length - 1),
+                ),
+                onSelectedItemChanged: (i) {
+                  setSheetState(() => _dailyGoal = goals[i]);
+                  setState(() => _dailyGoal = goals[i]);
+                },
+                children: goals.map((g) => Center(
+                  child: Text('$g ml', style: TextStyle(
                     fontSize: 20,
                     color: colors.textPrimary,
                   )),
@@ -699,16 +754,26 @@ class _WaterScreenState extends ConsumerState<WaterScreen> with SingleTickerProv
   }
 
   Widget _buildDrinkButton(DrinkType type, AppColors colors) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // 浅色饮品（牛奶、奶茶等）在浅色主题下需要更深的边框
+    final isLightColor = type.color.computeLuminance() > 0.5;
+    final borderColor = isDark 
+        ? type.color.withOpacity(0.3)
+        : (isLightColor ? Colors.grey.withOpacity(0.3) : type.color.withOpacity(0.2));
+    final textColor = isDark 
+        ? type.color 
+        : (isLightColor ? type.color.withRed((type.color.red * 0.7).toInt()).withGreen((type.color.green * 0.7).toInt()).withBlue((type.color.blue * 0.7).toInt()) : type.color);
+    
     return GestureDetector(
       onTap: () => _showAddDialog(type),
       child: Container(
         width: 76,
         height: 76,
         decoration: BoxDecoration(
-          color: type.color.withOpacity(0.12),
+          color: type.color.withOpacity(isDark ? 0.15 : 0.12),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: type.color.withOpacity(0.2),
+            color: borderColor,
             width: 1,
           ),
         ),
@@ -719,7 +784,7 @@ class _WaterScreenState extends ConsumerState<WaterScreen> with SingleTickerProv
             const SizedBox(height: 4),
             Text(type.name, style: TextStyle(
               fontSize: 11,
-              color: type.color,
+              color: textColor,
               fontWeight: FontWeight.w500,
             )),
           ],
