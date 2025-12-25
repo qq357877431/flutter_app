@@ -6,6 +6,7 @@ import '../config/colors.dart';
 import '../models/plan.dart';
 import '../providers/auth_provider.dart';
 import '../providers/plan_provider.dart';
+import '../services/haptic_service.dart';
 import '../services/notification_service.dart';
 
 class PlanScreen extends ConsumerStatefulWidget {
@@ -323,6 +324,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                                 plan: plan,
                                 colors: colors,
                                 onToggle: () async {
+                                  HapticService.mediumImpact(); // 完成任务时触觉反馈
                                   await ref.read(planProvider.notifier).togglePlanStatus(plan);
                                   _checkAndScheduleReminder();
                                 },

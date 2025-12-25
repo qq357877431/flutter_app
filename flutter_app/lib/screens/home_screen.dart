@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../config/colors.dart';
+import '../services/haptic_service.dart';
 import 'plan_screen.dart';
 import 'expense_screen.dart';
 import 'water_screen.dart';
@@ -17,10 +18,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   int _currentIndex = 0;
   late PageController _pageController;
-  late AnimationController _liquidController;
   
   double _dragStartX = 0;
-  double _liquidPosition = 0; // 0-3 对应4个tab
+  double _liquidPosition = 0;
   bool _isDragging = false;
 
   final List<_NavItemData> _navItems = [
@@ -34,22 +34,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _currentIndex);
-    _liquidController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
     _liquidPosition = _currentIndex.toDouble();
   }
 
   @override
   void dispose() {
     _pageController.dispose();
-    _liquidController.dispose();
     super.dispose();
   }
 
   void _onTabTapped(int index) {
     if (_currentIndex != index) {
+      HapticService.lightImpact(); // 切换菜单时触觉反馈
       setState(() {
         _currentIndex = index;
         _liquidPosition = index.toDouble();
@@ -59,7 +55,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOutCubic,
       );
-      _liquidController.forward(from: 0);
     }
   }
 
@@ -105,32 +100,43 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colors = AppColors(isDark);
     final tabColors = [colors.primary, colors.green, colors.blue, colors.orange];
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
     
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
-      extendBody: true, // 让内容延伸到导航栏下方
-      body: PageView(
-        controller: _pageController,
-        onPageChanged: _onPageChanged,
-        physics: const BouncingScrollPhysics(),
-        children: const [
-          PlanScreen(),
-          ExpenseScreen(),
-          WaterScreen(),
-          SettingsScreen(),
+      body: Stack(
+        children: [
+          // 页面内容
+          PageView(
+            controller: _pageController,
+            onPageChanged: _onPageChanged,
+            physics: const BouncingScrollPhysics(),
+            children: const [
+              PlanScreen(),
+              ExpenseScreen(),
+              WaterScreen(),
+              SettingsScreen(),
+            ],
+          ),
+          // 浮动导航栏
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: bottomPadding + 16,
+            child: _LiquidGlassNavBar(
+              currentIndex: _currentIndex,
+              liquidPosition: _liquidPosition,
+              navItems: _navItems,
+              tabColors: tabColors,
+              colors: colors,
+              isDark: isDark,
+              onTabTapped: _onTabTapped,
+              onHorizontalDragStart: _onHorizontalDragStart,
+              onHorizontalDragUpdate: _onHorizontalDragUpdate,
+              onHorizontalDragEnd: _onHorizontalDragEnd,
+            ),
+          ),
         ],
-      ),
-      bottomNavigationBar: _LiquidGlassNavBar(
-        currentIndex: _currentIndex,
-        liquidPosition: _liquidPosition,
-        navItems: _navItems,
-        tabColors: tabColors,
-        colors: colors,
-        isDark: isDark,
-        onTabTapped: _onTabTapped,
-        onHorizontalDragStart: _onHorizontalDragStart,
-        onHorizontalDragUpdate: _onHorizontalDragUpdate,
-        onHorizontalDragEnd: _onHorizontalDragEnd,
       ),
     );
   }
@@ -171,33 +177,32 @@ class _LiquidGlassNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-    
     return Container(
-      margin: EdgeInsets.only(left: 16, right: 16, bottom: bottomPadding + 12),
+      height: 70,
       decoration: BoxDecoration(
         color: isDark 
-            ? Colors.black.withOpacity(0.7)
-            : Colors.white.withOpacity(0.85),
-        borderRadius: BorderRadius.circular(24),
+            ? Colors.black.withOpacity(0.6)
+            : Colors.white.withOpacity(0.8),
+        borderRadius: BorderRadius.circular(28),
         border: Border.all(
           color: isDark 
-              ? Colors.white.withOpacity(0.15)
-              : Colors.black.withOpacity(0.08),
+              ? Colors.white.withOpacity(0.12)
+              : Colors.black.withOpacity(0.06),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.4 : 0.15),
-            blurRadius: 20,
+            color: Colors.black.withOpacity(isDark ? 0.5 : 0.12),
+            blurRadius: 24,
             offset: const Offset(0, 8),
+            spreadRadius: 0,
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(28),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
+          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
           child: LayoutBuilder(
             builder: (context, constraints) {
               final navWidth = constraints.maxWidth;
@@ -207,49 +212,46 @@ class _LiquidGlassNavBar extends StatelessWidget {
                 onHorizontalDragStart: onHorizontalDragStart,
                 onHorizontalDragUpdate: (details) => onHorizontalDragUpdate(details, navWidth),
                 onHorizontalDragEnd: onHorizontalDragEnd,
-                child: Container(
-                  height: 65,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  child: Stack(
-                    children: [
-                      // 液态玻璃指示器
-                      AnimatedPositioned(
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOutCubic,
-                        left: liquidPosition * itemWidth + 8,
-                        top: 4,
-                        child: _LiquidIndicator(
-                          width: itemWidth - 16,
-                          color: tabColors[liquidPosition.round().clamp(0, 3)],
-                          isDark: isDark,
-                        ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // 液态玻璃指示器 - 包裹整个菜单项
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutCubic,
+                      left: liquidPosition * itemWidth + 6,
+                      top: 6,
+                      bottom: 6,
+                      child: _LiquidIndicator(
+                        width: itemWidth - 12,
+                        color: tabColors[liquidPosition.round().clamp(0, 3)],
+                        isDark: isDark,
                       ),
-                      // 导航项
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: List.generate(4, (index) {
-                          final isSelected = currentIndex == index;
-                          final item = navItems[index];
-                          final color = tabColors[index];
-                          
-                          return Expanded(
-                            child: GestureDetector(
-                              onTap: () => onTabTapped(index),
-                              behavior: HitTestBehavior.opaque,
-                              child: _NavItem(
-                                icon: item.icon,
-                                activeIcon: item.activeIcon,
-                                label: item.label,
-                                isSelected: isSelected,
-                                color: color,
-                                colors: colors,
-                              ),
+                    ),
+                    // 导航项
+                    Row(
+                      children: List.generate(4, (index) {
+                        final isSelected = currentIndex == index;
+                        final item = navItems[index];
+                        final color = tabColors[index];
+                        
+                        return Expanded(
+                          child: GestureDetector(
+                            onTap: () => onTabTapped(index),
+                            behavior: HitTestBehavior.opaque,
+                            child: _NavItem(
+                              icon: item.icon,
+                              activeIcon: item.activeIcon,
+                              label: item.label,
+                              isSelected: isSelected,
+                              color: color,
+                              colors: colors,
                             ),
-                          );
-                        }),
-                      ),
-                    ],
-                  ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ],
                 ),
               );
             },
@@ -275,46 +277,40 @@ class _LiquidIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: width,
-      height: 48,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            color.withOpacity(isDark ? 0.3 : 0.2),
-            color.withOpacity(isDark ? 0.15 : 0.1),
+            color.withOpacity(isDark ? 0.35 : 0.25),
+            color.withOpacity(isDark ? 0.2 : 0.15),
           ],
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: color.withOpacity(isDark ? 0.4 : 0.3),
+          color: color.withOpacity(isDark ? 0.5 : 0.4),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.3),
-            blurRadius: 12,
+            color: color.withOpacity(0.4),
+            blurRadius: 16,
             offset: const Offset(0, 4),
-          ),
-          BoxShadow(
-            color: color.withOpacity(0.1),
-            blurRadius: 20,
-            spreadRadius: 2,
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.white.withOpacity(isDark ? 0.1 : 0.4),
-                  Colors.white.withOpacity(isDark ? 0.05 : 0.1),
+                  Colors.white.withOpacity(isDark ? 0.15 : 0.5),
+                  Colors.white.withOpacity(isDark ? 0.05 : 0.15),
                 ],
               ),
             ),
@@ -360,14 +356,14 @@ class _NavItem extends StatelessWidget {
             isSelected ? activeIcon : icon,
             key: ValueKey(isSelected),
             color: isSelected ? color : colors.textTertiary,
-            size: isSelected ? 26 : 24,
+            size: isSelected ? 26 : 22,
           ),
         ),
         const SizedBox(height: 4),
         AnimatedDefaultTextStyle(
           duration: const Duration(milliseconds: 200),
           style: TextStyle(
-            fontSize: 11,
+            fontSize: isSelected ? 11 : 10,
             color: isSelected ? color : colors.textTertiary,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
           ),

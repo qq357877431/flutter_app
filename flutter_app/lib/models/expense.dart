@@ -14,12 +14,16 @@ class Expense {
   }) : createdAt = createdAt ?? DateTime.now();
 
   factory Expense.fromJson(Map<String, dynamic> json) {
+    // 解析时间并转换为本地时间
+    final utcTime = DateTime.parse(json['created_at'] as String);
+    final localTime = utcTime.isUtc ? utcTime.toLocal() : utcTime;
+    
     return Expense(
       id: json['id'] as int?,
       amount: (json['amount'] as num).toDouble(),
       category: json['category'] as String,
       note: json['note'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: localTime,
     );
   }
 

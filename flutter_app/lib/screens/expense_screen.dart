@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../config/colors.dart';
 import '../models/expense.dart';
 import '../providers/expense_provider.dart';
+import '../services/haptic_service.dart';
 
 class ExpenseScreen extends ConsumerStatefulWidget {
   const ExpenseScreen({super.key});
@@ -262,6 +263,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                   onPressed: () async {
                     final amount = double.tryParse(amountController.text);
                     if (amount != null && amount > 0) {
+                      HapticService.mediumImpact(); // 记账时触觉反馈
                       await ref.read(expenseProvider.notifier).createExpense(amount, selectedCategory, noteController.text.isEmpty ? null : noteController.text);
                       if (mounted) Navigator.pop(ctx);
                     }

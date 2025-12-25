@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 import '../config/colors.dart';
 import '../providers/auth_provider.dart';
+import '../services/haptic_service.dart';
 import '../services/notification_service.dart';
 
 class WaterScreen extends ConsumerStatefulWidget {
@@ -93,6 +94,7 @@ class _WaterScreenState extends ConsumerState<WaterScreen> with SingleTickerProv
   }
 
   void _addRecord(DrinkType type, int amount) {
+    HapticService.mediumImpact(); // 记录喝水时触觉反馈
     setState(() {
       _records.insert(0, WaterRecord(
         type: type.name,
