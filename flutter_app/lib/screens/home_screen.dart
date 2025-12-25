@@ -108,6 +108,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
+      extendBody: true, // 让内容延伸到导航栏下方
       body: PageView(
         controller: _pageController,
         onPageChanged: _onPageChanged,
@@ -170,80 +171,88 @@ class _LiquidGlassNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    
     return Container(
+      margin: EdgeInsets.only(left: 16, right: 16, bottom: bottomPadding + 12),
       decoration: BoxDecoration(
         color: isDark 
-            ? Colors.black.withOpacity(0.6)
-            : Colors.white.withOpacity(0.8),
-        border: Border(
-          top: BorderSide(
-            color: isDark 
-                ? Colors.white.withOpacity(0.1)
-                : Colors.black.withOpacity(0.05),
-            width: 0.5,
-          ),
+            ? Colors.black.withOpacity(0.7)
+            : Colors.white.withOpacity(0.85),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark 
+              ? Colors.white.withOpacity(0.15)
+              : Colors.black.withOpacity(0.08),
+          width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.4 : 0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-      child: ClipRect(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final navWidth = constraints.maxWidth;
-                final itemWidth = navWidth / 4;
-                
-                return GestureDetector(
-                  onHorizontalDragStart: onHorizontalDragStart,
-                  onHorizontalDragUpdate: (details) => onHorizontalDragUpdate(details, navWidth),
-                  onHorizontalDragEnd: onHorizontalDragEnd,
-                  child: Container(
-                    height: 65,
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                    child: Stack(
-                      children: [
-                        // 液态玻璃指示器
-                        AnimatedPositioned(
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeOutCubic,
-                          left: liquidPosition * itemWidth + 8,
-                          top: 4,
-                          child: _LiquidIndicator(
-                            width: itemWidth - 16,
-                            color: tabColors[liquidPosition.round().clamp(0, 3)],
-                            isDark: isDark,
-                          ),
+          filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final navWidth = constraints.maxWidth;
+              final itemWidth = navWidth / 4;
+              
+              return GestureDetector(
+                onHorizontalDragStart: onHorizontalDragStart,
+                onHorizontalDragUpdate: (details) => onHorizontalDragUpdate(details, navWidth),
+                onHorizontalDragEnd: onHorizontalDragEnd,
+                child: Container(
+                  height: 65,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  child: Stack(
+                    children: [
+                      // 液态玻璃指示器
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutCubic,
+                        left: liquidPosition * itemWidth + 8,
+                        top: 4,
+                        child: _LiquidIndicator(
+                          width: itemWidth - 16,
+                          color: tabColors[liquidPosition.round().clamp(0, 3)],
+                          isDark: isDark,
                         ),
-                        // 导航项
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: List.generate(4, (index) {
-                            final isSelected = currentIndex == index;
-                            final item = navItems[index];
-                            final color = tabColors[index];
-                            
-                            return Expanded(
-                              child: GestureDetector(
-                                onTap: () => onTabTapped(index),
-                                behavior: HitTestBehavior.opaque,
-                                child: _NavItem(
-                                  icon: item.icon,
-                                  activeIcon: item.activeIcon,
-                                  label: item.label,
-                                  isSelected: isSelected,
-                                  color: color,
-                                  colors: colors,
-                                ),
+                      ),
+                      // 导航项
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: List.generate(4, (index) {
+                          final isSelected = currentIndex == index;
+                          final item = navItems[index];
+                          final color = tabColors[index];
+                          
+                          return Expanded(
+                            child: GestureDetector(
+                              onTap: () => onTabTapped(index),
+                              behavior: HitTestBehavior.opaque,
+                              child: _NavItem(
+                                icon: item.icon,
+                                activeIcon: item.activeIcon,
+                                label: item.label,
+                                isSelected: isSelected,
+                                color: color,
+                                colors: colors,
                               ),
-                            );
-                          }),
-                        ),
-                      ],
-                    ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
         ),
       ),
