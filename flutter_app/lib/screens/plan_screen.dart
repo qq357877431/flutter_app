@@ -338,7 +338,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
               ),
               // 添加按钮
               Padding(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 100),
                 child: Container(
                   width: double.infinity,
                   decoration: colors.buttonDecoration(radius: 12),

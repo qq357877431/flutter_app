@@ -463,7 +463,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
               ),
               // 添加按钮
               Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
                 child: Container(
                   width: double.infinity,
                   decoration: colors.gradientDecoration(colors.greenGradient),

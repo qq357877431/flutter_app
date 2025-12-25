@@ -717,7 +717,7 @@ class _WaterScreenState extends ConsumerState<WaterScreen> with SingleTickerProv
             _records.isEmpty
                 ? SliverToBoxAdapter(
                     child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
+                      margin: const EdgeInsets.fromLTRB(20, 0, 20, 100),
                       padding: const EdgeInsets.all(40),
                       decoration: colors.cardDecoration(),
                       child: Column(
@@ -743,7 +743,7 @@ class _WaterScreenState extends ConsumerState<WaterScreen> with SingleTickerProv
                 : SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) => Padding(
-                        padding: EdgeInsets.fromLTRB(20, 0, 20, index == _records.length - 1 ? 20 : 8),
+                        padding: EdgeInsets.fromLTRB(20, 0, 20, index == _records.length - 1 ? 100 : 8),
                         child: _buildRecordItem(index, colors),
                       ),
                       childCount: _records.length,

@@ -177,32 +177,33 @@ class _LiquidGlassNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 70,
-      decoration: BoxDecoration(
-        color: isDark 
-            ? Colors.black.withOpacity(0.6)
-            : Colors.white.withOpacity(0.8),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: isDark 
-              ? Colors.white.withOpacity(0.12)
-              : Colors.black.withOpacity(0.06),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.5 : 0.12),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-            spreadRadius: 0,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(28),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
+        child: Container(
+          height: 70,
+          decoration: BoxDecoration(
+            // 毛玻璃效果：半透明背景
+            color: isDark 
+                ? Colors.black.withOpacity(0.4)
+                : Colors.white.withOpacity(0.65),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(
+              color: isDark 
+                  ? Colors.white.withOpacity(0.15)
+                  : Colors.white.withOpacity(0.8),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(isDark ? 0.4 : 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
+                spreadRadius: 0,
+              ),
+            ],
           ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
           child: LayoutBuilder(
             builder: (context, constraints) {
               final navWidth = constraints.maxWidth;

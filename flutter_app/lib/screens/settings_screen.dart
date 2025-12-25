@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -128,7 +127,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 _buildSettingCard(colors, children: [
                   _buildSettingItem(
                     icon: Icons.info_rounded, iconBg: colors.orange,
-                    title: '版本', value: '1.5.4', showArrow: false, colors: colors,
+                    title: '版本', value: '1.5.6', showArrow: false, colors: colors,
                   ),
                 ]),
               ]),
@@ -140,73 +139,77 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildHeader(dynamic user, AppColors colors, bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
-          colors: colors.primaryGradient,
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Column(children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Row(children: const [
-              Text('设置', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
-            ]),
-          ),
-          Container(
-            margin: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.black.withOpacity(0.2) : Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Row(children: [
-                  Container(
-                    width: 64, height: 64,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Center(child: Text(
-                      user?.avatar?.isNotEmpty == true ? user!.avatar! : '👤',
-                      style: const TextStyle(fontSize: 36),
-                    )),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(user?.displayName ?? '未设置昵称',
-                        style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 4),
-                      Text(user?.phoneNumber ?? '',
-                        style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14, fontWeight: FontWeight.w500)),
-                    ],
-                  )),
-                  GestureDetector(
-                    onTap: _showEditProfileSheet,
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Icon(Icons.edit_rounded, color: Colors.white, size: 20),
-                    ),
-                  ),
-                ]),
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 标题
+            Text('设置', style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w700,
+              color: colors.textPrimary,
+              letterSpacing: -0.5,
+            )),
+            const SizedBox(height: 20),
+            // 用户信息卡片
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: colors.cardBg,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: colors.cardShadow,
               ),
+              child: Row(children: [
+                // 头像
+                Container(
+                  width: 56, height: 56,
+                  decoration: BoxDecoration(
+                    color: colors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Center(child: Text(
+                    user?.avatar?.isNotEmpty == true ? user!.avatar! : '👤',
+                    style: const TextStyle(fontSize: 32),
+                  )),
+                ),
+                const SizedBox(width: 14),
+                // 用户信息
+                Expanded(child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(user?.displayName ?? '未设置昵称',
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      )),
+                    const SizedBox(height: 2),
+                    Text(user?.phoneNumber ?? '',
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: 14,
+                      )),
+                  ],
+                )),
+                // 编辑按钮
+                GestureDetector(
+                  onTap: _showEditProfileSheet,
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: colors.cardBgSecondary,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.chevron_right_rounded, color: colors.textTertiary, size: 22),
+                  ),
+                ),
+              ]),
             ),
-          ),
-        ]),
+          ],
+        ),
       ),
     );
   }

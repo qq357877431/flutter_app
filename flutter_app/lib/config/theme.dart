@@ -8,25 +8,30 @@ class AppTheme {
   static const accent = Color(0xFF34C759);
   static const warning = Color(0xFFFF9500);
   static const error = Color(0xFFFF3B30);
+  
+  // iOS 风格字体 - 使用系统字体
+  static const String? _fontFamily = '.SF Pro Text'; // iOS SF Pro
 
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
       primaryColor: primary,
+      fontFamily: _fontFamily,
       scaffoldBackgroundColor: const Color(0xFFF2F2F7),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
         scrolledUnderElevation: 0,
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.black,
         titleTextStyle: TextStyle(
+          fontFamily: _fontFamily,
           color: Colors.black,
           fontSize: 17,
           fontWeight: FontWeight.w600,
         ),
-        iconTheme: IconThemeData(color: Colors.black),
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       cardTheme: CardThemeData(
         elevation: 0,
@@ -54,16 +59,27 @@ class AppTheme {
           padding: const EdgeInsets.symmetric(vertical: 14),
         ),
       ),
-      textTheme: const TextTheme(
-        bodyLarge: TextStyle(color: Colors.black, fontWeight: FontWeight.w500),
-        bodyMedium: TextStyle(color: Colors.black, fontWeight: FontWeight.w500),
-        bodySmall: TextStyle(color: Colors.black54, fontWeight: FontWeight.w500),
-        titleLarge: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
-        titleMedium: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
-        titleSmall: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
-        labelLarge: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
-        labelMedium: TextStyle(color: Colors.black, fontWeight: FontWeight.w500),
-        labelSmall: TextStyle(color: Colors.black54, fontWeight: FontWeight.w500),
+      cupertinoOverrideTheme: const CupertinoThemeData(
+        textTheme: CupertinoTextThemeData(
+          textStyle: TextStyle(fontFamily: _fontFamily),
+        ),
+      ),
+      textTheme: TextTheme(
+        displayLarge: TextStyle(fontFamily: _fontFamily, color: Colors.black, fontWeight: FontWeight.w700),
+        displayMedium: TextStyle(fontFamily: _fontFamily, color: Colors.black, fontWeight: FontWeight.w700),
+        displaySmall: TextStyle(fontFamily: _fontFamily, color: Colors.black, fontWeight: FontWeight.w600),
+        headlineLarge: TextStyle(fontFamily: _fontFamily, color: Colors.black, fontWeight: FontWeight.w600),
+        headlineMedium: TextStyle(fontFamily: _fontFamily, color: Colors.black, fontWeight: FontWeight.w600),
+        headlineSmall: TextStyle(fontFamily: _fontFamily, color: Colors.black, fontWeight: FontWeight.w600),
+        titleLarge: TextStyle(fontFamily: _fontFamily, color: Colors.black, fontWeight: FontWeight.w600),
+        titleMedium: TextStyle(fontFamily: _fontFamily, color: Colors.black, fontWeight: FontWeight.w600),
+        titleSmall: TextStyle(fontFamily: _fontFamily, color: Colors.black, fontWeight: FontWeight.w500),
+        bodyLarge: TextStyle(fontFamily: _fontFamily, color: Colors.black, fontWeight: FontWeight.w400),
+        bodyMedium: TextStyle(fontFamily: _fontFamily, color: Colors.black, fontWeight: FontWeight.w400),
+        bodySmall: TextStyle(fontFamily: _fontFamily, color: Colors.black54, fontWeight: FontWeight.w400),
+        labelLarge: TextStyle(fontFamily: _fontFamily, color: Colors.black, fontWeight: FontWeight.w500),
+        labelMedium: TextStyle(fontFamily: _fontFamily, color: Colors.black, fontWeight: FontWeight.w500),
+        labelSmall: TextStyle(fontFamily: _fontFamily, color: Colors.black54, fontWeight: FontWeight.w500),
       ),
       colorScheme: const ColorScheme.light(
         primary: primary,
@@ -85,19 +101,21 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.dark,
       primaryColor: primary,
+      fontFamily: _fontFamily,
       scaffoldBackgroundColor: darkBg,
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
         scrolledUnderElevation: 0,
         backgroundColor: Colors.transparent,
         foregroundColor: darkText,
         titleTextStyle: TextStyle(
+          fontFamily: _fontFamily,
           color: darkText,
           fontSize: 17,
           fontWeight: FontWeight.w600,
         ),
-        iconTheme: IconThemeData(color: darkText),
+        iconTheme: const IconThemeData(color: darkText),
       ),
       cardTheme: CardThemeData(
         elevation: 0,
@@ -126,16 +144,27 @@ class AppTheme {
           padding: const EdgeInsets.symmetric(vertical: 14),
         ),
       ),
-      textTheme: const TextTheme(
-        bodyLarge: TextStyle(color: darkText, fontWeight: FontWeight.w500),
-        bodyMedium: TextStyle(color: darkText, fontWeight: FontWeight.w500),
-        bodySmall: TextStyle(color: darkTextSecondary, fontWeight: FontWeight.w500),
-        titleLarge: TextStyle(color: darkText, fontWeight: FontWeight.w600),
-        titleMedium: TextStyle(color: darkText, fontWeight: FontWeight.w600),
-        titleSmall: TextStyle(color: darkText, fontWeight: FontWeight.w600),
-        labelLarge: TextStyle(color: darkText, fontWeight: FontWeight.w600),
-        labelMedium: TextStyle(color: darkText, fontWeight: FontWeight.w500),
-        labelSmall: TextStyle(color: darkTextSecondary, fontWeight: FontWeight.w500),
+      cupertinoOverrideTheme: const CupertinoThemeData(
+        textTheme: CupertinoTextThemeData(
+          textStyle: TextStyle(fontFamily: _fontFamily),
+        ),
+      ),
+      textTheme: TextTheme(
+        displayLarge: TextStyle(fontFamily: _fontFamily, color: darkText, fontWeight: FontWeight.w700),
+        displayMedium: TextStyle(fontFamily: _fontFamily, color: darkText, fontWeight: FontWeight.w700),
+        displaySmall: TextStyle(fontFamily: _fontFamily, color: darkText, fontWeight: FontWeight.w600),
+        headlineLarge: TextStyle(fontFamily: _fontFamily, color: darkText, fontWeight: FontWeight.w600),
+        headlineMedium: TextStyle(fontFamily: _fontFamily, color: darkText, fontWeight: FontWeight.w600),
+        headlineSmall: TextStyle(fontFamily: _fontFamily, color: darkText, fontWeight: FontWeight.w600),
+        titleLarge: TextStyle(fontFamily: _fontFamily, color: darkText, fontWeight: FontWeight.w600),
+        titleMedium: TextStyle(fontFamily: _fontFamily, color: darkText, fontWeight: FontWeight.w600),
+        titleSmall: TextStyle(fontFamily: _fontFamily, color: darkText, fontWeight: FontWeight.w500),
+        bodyLarge: TextStyle(fontFamily: _fontFamily, color: darkText, fontWeight: FontWeight.w400),
+        bodyMedium: TextStyle(fontFamily: _fontFamily, color: darkText, fontWeight: FontWeight.w400),
+        bodySmall: TextStyle(fontFamily: _fontFamily, color: darkTextSecondary, fontWeight: FontWeight.w400),
+        labelLarge: TextStyle(fontFamily: _fontFamily, color: darkText, fontWeight: FontWeight.w500),
+        labelMedium: TextStyle(fontFamily: _fontFamily, color: darkText, fontWeight: FontWeight.w500),
+        labelSmall: TextStyle(fontFamily: _fontFamily, color: darkTextSecondary, fontWeight: FontWeight.w500),
       ),
       dividerColor: const Color(0xFF38383A),
       colorScheme: const ColorScheme.dark(
