@@ -34,7 +34,6 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
 
   Map<String, dynamic> _getCategoryInfo(String name) => _categories.firstWhere((c) => c['name'] == name, orElse: () => _categories.last);
 
-  // 获取筛选后的消费记录
   List<Expense> _getFilteredExpenses(List<Expense> expenses) {
     if (_selectedYear == null && _selectedMonth == null) {
       return expenses;
@@ -46,12 +45,10 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
     }).toList();
   }
 
-  // 计算筛选后的总额
   double _getFilteredTotal(List<Expense> expenses) {
     return _getFilteredExpenses(expenses).fold(0.0, (sum, e) => sum + e.amount);
   }
 
-  // 显示年月选择器
   void _showDateFilter() {
     final now = DateTime.now();
     int tempYear = _selectedYear ?? now.year;
@@ -109,7 +106,6 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
               ],
             ),
             const SizedBox(height: 10),
-            // 重置按钮
             GestureDetector(
               onTap: () {
                 setState(() {
@@ -131,7 +127,6 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
             Expanded(
               child: Row(
                 children: [
-                  // 年份选择
                   Expanded(
                     child: CupertinoPicker(
                       itemExtent: 44,
@@ -147,7 +142,6 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                       ),
                     ),
                   ),
-                  // 月份选择
                   Expanded(
                     child: CupertinoPicker(
                       itemExtent: 44,
@@ -263,7 +257,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                   onPressed: () async {
                     final amount = double.tryParse(amountController.text);
                     if (amount != null && amount > 0) {
-                      HapticService.mediumImpact(); // 记账时触觉反馈
+                      HapticService.mediumImpact();
                       await ref.read(expenseProvider.notifier).createExpense(amount, selectedCategory, noteController.text.isEmpty ? null : noteController.text);
                       if (mounted) Navigator.pop(ctx);
                     }
@@ -284,79 +278,96 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
     final dateFormat = DateFormat('MM/dd HH:mm');
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colors = AppColors(isDark);
-    final bgColors = isDark 
-        ? [const Color(0xFF1C1C1E), const Color(0xFF1C1C1E), const Color(0xFF1C1C1E)]
-        : [const Color(0xFFE8F5E9), const Color(0xFFF0FFF4), Colors.white];
 
     return CupertinoPageScaffold(
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: bgColors,
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // 自定义导航栏
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-                child: Row(
-                  children: [
-                    Text('消费记录', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: colors.textPrimary)),
-                    const Spacer(),
-                    // 筛选按钮
-                    GestureDetector(
-                      onTap: _showDateFilter,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: (_selectedYear != null || _selectedMonth != null) 
-                              ? colors.green.withOpacity(0.15)
-                              : Colors.grey.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                          border: (_selectedYear != null || _selectedMonth != null)
-                              ? Border.all(color: colors.green, width: 1)
-                              : null,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              CupertinoIcons.calendar,
-                              size: 16,
-                              color: (_selectedYear != null || _selectedMonth != null)
-                                  ? colors.green
-                                  : (isDark ? const Color(0xFF8E8E93) : Colors.grey[600]),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              (_selectedYear != null && _selectedMonth != null)
-                                  ? '$_selectedYear年$_selectedMonth月'
-                                  : '筛选',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: (_selectedYear != null || _selectedMonth != null)
-                                    ? colors.green
-                                    : (isDark ? const Color(0xFF8E8E93) : Colors.grey[600]),
-                                fontWeight: (_selectedYear != null || _selectedMonth != null)
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+      backgroundColor: colors.scaffoldBg,
+      child: CustomScrollView(
+        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+        slivers: [
+          // 1. Sliver Navigation Bar
+          CupertinoSliverNavigationBar(
+            largeTitle: Text(
+              '消费记录',
+              style: TextStyle(color: colors.textPrimary),
+            ),
+            backgroundColor: colors.scaffoldBg.withOpacity(0.8),
+            border: null,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Filter Button (First)
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () {
+                    HapticService.lightImpact();
+                    _showDateFilter();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: (_selectedYear != null || _selectedMonth != null) 
+                          ? colors.green.withOpacity(0.15)
+                          : colors.cardBgSecondary,
+                      shape: BoxShape.circle,
+                      border: (_selectedYear != null || _selectedMonth != null)
+                          ? Border.all(color: colors.green, width: 1)
+                          : null,
                     ),
-                  ],
+                    child: Icon(
+                      CupertinoIcons.calendar,
+                      size: 20,
+                      color: (_selectedYear != null || _selectedMonth != null)
+                          ? colors.green
+                          : colors.primary,
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              // 总支出卡片
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
+                const SizedBox(width: 8),
+                // Add Expense Button (Second)
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () {
+                    HapticService.lightImpact();
+                    _showAddExpenseSheet();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: colors.greenGradient),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors.green.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(CupertinoIcons.add, color: Colors.white, size: 16),
+                        SizedBox(width: 4),
+                        Text(
+                          '记一笔',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // 2. Summary Card
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+              child: Container(
                 padding: const EdgeInsets.all(22),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -365,7 +376,13 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                     colors: colors.greenGradient,
                   ),
                   borderRadius: BorderRadius.circular(20),
-                  boxShadow: [BoxShadow(color: colors.greenGradient.first.withOpacity(colors.shadowOpacity), blurRadius: 20, offset: const Offset(0, 10))],
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.greenGradient.first.withOpacity(colors.shadowOpacity),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -374,7 +391,10 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                       children: [
                         Container(
                           padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           child: const Icon(CupertinoIcons.money_dollar_circle_fill, color: Colors.white, size: 22),
                         ),
                         const SizedBox(width: 12),
@@ -393,7 +413,12 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                             ? _getFilteredTotal(expenseState.expenses)
                             : expenseState.total
                       ),
-                      style: const TextStyle(color: Colors.white, fontSize: 34, fontWeight: FontWeight.bold, letterSpacing: -1),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 34,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -1,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -403,87 +428,72 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
-              // 消费明细标题
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
+            ),
+          ),
+
+          // 3. Expense List
+          if (expenseState.isLoading)
+            const SliverFillRemaining(
+              child: Center(child: CupertinoActivityIndicator()),
+            )
+          else if (_getFilteredExpenses(expenseState.expenses).isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('消费明细', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: colors.textPrimary)),
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: colors.green.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(CupertinoIcons.money_dollar, size: 48, color: colors.green.withOpacity(0.5)),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      (_selectedYear != null || _selectedMonth != null)
+                          ? '该时间段暂无消费记录'
+                          : '暂无消费记录',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: colors.textSecondary,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
-              // 消费列表
-              Expanded(
-                child: expenseState.isLoading
-                    ? const Center(child: CupertinoActivityIndicator())
-                    : _getFilteredExpenses(expenseState.expenses).isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(24),
-                                  decoration: BoxDecoration(
-                                    color: colors.green.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(24),
-                                  ),
-                                  child: Icon(CupertinoIcons.money_dollar, size: 48, color: colors.green),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  (_selectedYear != null || _selectedMonth != null)
-                                      ? '该时间段暂无消费记录'
-                                      : '暂无消费记录',
-                                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: colors.textSecondary),
-                                ),
-                              ],
-                            ),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            itemCount: _getFilteredExpenses(expenseState.expenses).length,
-                            itemBuilder: (ctx, i) {
-                              final filteredExpenses = _getFilteredExpenses(expenseState.expenses);
-                              final expense = filteredExpenses[i];
-                              final catColors = colors.categoryColors[expense.category] ?? colors.categoryColors['其他']!;
-                              return _ExpenseTile(
-                                expense: expense,
-                                categoryIcon: (_getCategoryInfo(expense.category)['icon'] as IconData),
-                                categoryColors: catColors,
-                                currencyFormat: currencyFormat,
-                                dateFormat: dateFormat,
-                                isDark: isDark,
-                                colors: colors,
-                                onDelete: () => ref.read(expenseProvider.notifier).deleteExpense(expense.id!),
-                              );
-                            },
-                          ),
-              ),
-              // 添加按钮
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
-                child: Container(
-                  width: double.infinity,
-                  decoration: colors.gradientDecoration(colors.greenGradient),
-                  child: CupertinoButton(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    onPressed: _showAddExpenseSheet,
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(CupertinoIcons.add, size: 20, color: Colors.white),
-                        SizedBox(width: 8),
-                        Text('记一笔', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
-                      ],
+            )
+          else
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (ctx, i) {
+                  final filteredExpenses = _getFilteredExpenses(expenseState.expenses);
+                  final expense = filteredExpenses[i];
+                  final catColors = colors.categoryColors[expense.category] ?? colors.categoryColors['其他']!;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                    child: _ExpenseTile(
+                      expense: expense,
+                      categoryIcon: (_getCategoryInfo(expense.category)['icon'] as IconData),
+                      categoryColors: catColors,
+                      currencyFormat: currencyFormat,
+                      dateFormat: dateFormat,
+                      isDark: isDark,
+                      colors: colors,
+                      onDelete: () => ref.read(expenseProvider.notifier).deleteExpense(expense.id!),
                     ),
-                  ),
-                ),
+                  );
+                },
+                childCount: _getFilteredExpenses(expenseState.expenses).length,
               ),
-            ],
-          ),
-        ),
+            ),
+
+          // 4. Bottom Padding
+          const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
+        ],
       ),
     );
   }
@@ -512,19 +522,12 @@ class _ExpenseTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cardBgColors = isDark
-        ? [const Color(0xFF2C2C2E), const Color(0xFF2C2C2E)]
-        : [Colors.white, const Color(0xFFF8FAFF)];
-    final textColor = isDark ? Colors.white : Colors.black;
-    final secondaryTextColor = isDark ? const Color(0xFF8E8E93) : Colors.grey[500];
-    
     return Dismissible(
       key: Key(expense.id.toString()),
       direction: DismissDirection.endToStart,
       background: Container(
-        margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          gradient: LinearGradient(colors: colors.redGradient),
+          color: colors.red,
           borderRadius: BorderRadius.circular(16),
         ),
         alignment: Alignment.centerRight,
@@ -533,16 +536,17 @@ class _ExpenseTile extends StatelessWidget {
       ),
       onDismissed: (_) => onDelete(),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: cardBgColors,
-          ),
+          color: colors.cardBg,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: categoryColors.first.withOpacity(colors.shadowOpacity * 0.3), blurRadius: 12, offset: const Offset(0, 4))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -550,21 +554,42 @@ class _ExpenseTile extends StatelessWidget {
               width: 46, height: 46,
               decoration: BoxDecoration(
                 gradient: LinearGradient(colors: categoryColors),
-                borderRadius: BorderRadius.circular(13),
-                boxShadow: [BoxShadow(color: categoryColors.first.withOpacity(colors.shadowOpacity), blurRadius: 8, offset: const Offset(0, 3))],
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: categoryColors.first.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Icon(categoryIcon, color: Colors.white, size: 22),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(expense.category, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: textColor)),
+                  Text(
+                    expense.category,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      color: colors.textPrimary,
+                    ),
+                  ),
                   if (expense.note != null && expense.note!.isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.only(top: 3),
-                      child: Text(expense.note!, style: TextStyle(color: secondaryTextColor, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        expense.note!,
+                        style: TextStyle(
+                          color: colors.textSecondary,
+                          fontSize: 13,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                 ],
               ),
@@ -572,9 +597,22 @@ class _ExpenseTile extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text('-${currencyFormat.format(expense.amount)}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colors.red)),
-                const SizedBox(height: 3),
-                Text(dateFormat.format(expense.createdAt), style: TextStyle(color: secondaryTextColor, fontSize: 12)),
+                Text(
+                  '-${currencyFormat.format(expense.amount)}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  dateFormat.format(expense.createdAt),
+                  style: TextStyle(
+                    color: colors.textTertiary,
+                    fontSize: 12,
+                  ),
+                ),
               ],
             ),
           ],

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,7 @@ import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/api_service.dart';
 import '../services/notification_service.dart';
+import '../services/haptic_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -14,10 +16,11 @@ class SettingsScreen extends ConsumerStatefulWidget {
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTickerProviderStateMixin {
   final _notificationService = NotificationService();
   TimeOfDay _bedtime = const TimeOfDay(hour: 23, minute: 0);
   bool _bedtimeEnabled = false;
+  late AnimationController _shimmerController;
 
   final List<String> _avatarOptions = [
     '😀', '😎', '🤖', '👨‍💻', '👩‍💻', '🦊', '🐱', '🐶',
@@ -27,7 +30,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat();
     _loadBedtimeSettings();
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadBedtimeSettings() async {
@@ -56,6 +69,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _toggleBedtime(bool v) async {
+    HapticService.lightImpact();
     setState(() => _bedtimeEnabled = v);
     if (v) {
       await _notificationService.scheduleBedtimeReminder(hour: _bedtime.hour, minute: _bedtime.minute);
@@ -76,58 +90,77 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
       body: CustomScrollView(
+        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
         slivers: [
           SliverToBoxAdapter(child: _buildHeader(user, colors, isDark)),
           SliverPadding(
             padding: EdgeInsets.fromLTRB(20, 0, 20, bottomPadding + 100),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                _buildSectionTitle('外观', colors),
+                _buildSectionTitle('外观', CupertinoIcons.paintbrush, colors),
                 _buildSettingCard(colors, children: [
                   _buildSettingItem(
-                    icon: Icons.palette_rounded, iconBg: colors.success,
+                    icon: CupertinoIcons.moon_stars_fill, 
+                    iconColors: [const Color(0xFF34C759), const Color(0xFF30D158)],
                     title: '主题模式',
                     value: _getThemeModeText(ref.watch(themeModeProvider)),
                     onTap: _showThemePicker, colors: colors,
                   ),
                 ]),
-                const SizedBox(height: 24),
-                _buildSectionTitle('提醒设置', colors),
+                const SizedBox(height: 28),
+                _buildSectionTitle('提醒设置', CupertinoIcons.bell_fill, colors),
                 _buildSettingCard(colors, children: [
                   _buildSettingItemWithSwitch(
-                    icon: Icons.nightlight_round, iconBg: const Color(0xFFAF52DE),
-                    title: '早睡提醒', subtitle: '每天 ${_formatTime(_bedtime)}',
-                    value: _bedtimeEnabled, onChanged: _toggleBedtime, colors: colors,
+                    icon: CupertinoIcons.moon_zzz_fill, 
+                    iconColors: [const Color(0xFFAF52DE), const Color(0xFFBF5AF2)],
+                    title: '早睡提醒', 
+                    subtitle: '每天 ${_formatTime(_bedtime)}',
+                    value: _bedtimeEnabled, 
+                    onChanged: _toggleBedtime, 
+                    colors: colors,
                   ),
                   if (_bedtimeEnabled) ...[
                     _buildDivider(colors),
                     _buildSettingItem(
-                      icon: Icons.access_time_rounded, iconBg: colors.accent,
-                      title: '提醒时间', value: _formatTime(_bedtime),
-                      onTap: _showBedtimePicker, colors: colors,
+                      icon: CupertinoIcons.clock_fill, 
+                      iconColors: [colors.accent, colors.accent.withOpacity(0.8)],
+                      title: '提醒时间', 
+                      value: _formatTime(_bedtime),
+                      onTap: _showBedtimePicker, 
+                      colors: colors,
                     ),
                   ],
                 ]),
-                const SizedBox(height: 24),
-                _buildSectionTitle('账户安全', colors),
+                const SizedBox(height: 28),
+                _buildSectionTitle('账户安全', CupertinoIcons.shield_fill, colors),
                 _buildSettingCard(colors, children: [
                   _buildSettingItem(
-                    icon: Icons.lock_rounded, iconBg: colors.blue,
-                    title: '修改密码', onTap: _showChangePasswordSheet, colors: colors,
+                    icon: CupertinoIcons.lock_fill, 
+                    iconColors: [colors.blue, const Color(0xFF64D2FF)],
+                    title: '修改密码', 
+                    onTap: _showChangePasswordSheet, 
+                    colors: colors,
                   ),
                   _buildDivider(colors),
                   _buildSettingItem(
-                    icon: Icons.logout_rounded, iconBg: colors.error,
-                    title: '退出登录', titleColor: colors.error,
-                    onTap: _showLogoutDialog, colors: colors,
+                    icon: CupertinoIcons.square_arrow_left_fill, 
+                    iconColors: [colors.error, const Color(0xFFFF6961)],
+                    title: '退出登录', 
+                    titleColor: colors.error,
+                    onTap: _showLogoutDialog, 
+                    colors: colors,
                   ),
                 ]),
-                const SizedBox(height: 24),
-                _buildSectionTitle('关于', colors),
+                const SizedBox(height: 28),
+                _buildSectionTitle('关于', CupertinoIcons.info_circle_fill, colors),
                 _buildSettingCard(colors, children: [
                   _buildSettingItem(
-                    icon: Icons.info_rounded, iconBg: colors.orange,
-                    title: '版本', value: '1.5.8', showArrow: false, colors: colors,
+                    icon: CupertinoIcons.sparkles, 
+                    iconColors: [colors.orange, const Color(0xFFFFD60A)],
+                    title: '版本', 
+                    value: '1.5.8', 
+                    showArrow: false, 
+                    colors: colors,
                   ),
                 ]),
               ]),
@@ -142,19 +175,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return SafeArea(
       bottom: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 标题
             Text('设置', style: TextStyle(
-              fontSize: 32,
+              fontSize: 34,
               fontWeight: FontWeight.w700,
               color: colors.textPrimary,
               letterSpacing: -0.5,
             )),
             const SizedBox(height: 20),
-            // 用户信息卡片
+            // 用户信息卡片 - 简洁iOS风格
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -165,45 +198,55 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: Row(children: [
                 // 头像
                 Container(
-                  width: 56, height: 56,
+                  width: 64, 
+                  height: 64,
                   decoration: BoxDecoration(
                     color: colors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
+                    shape: BoxShape.circle,
                   ),
                   child: Center(child: Text(
                     user?.avatar?.isNotEmpty == true ? user!.avatar! : '👤',
-                    style: const TextStyle(fontSize: 32),
+                    style: const TextStyle(fontSize: 36),
                   )),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 16),
                 // 用户信息
                 Expanded(child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(user?.displayName ?? '未设置昵称',
                       style: TextStyle(
                         color: colors.textPrimary,
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.w600,
+                        letterSpacing: -0.3,
                       )),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Text(user?.phoneNumber ?? '',
                       style: TextStyle(
                         color: colors.textSecondary,
-                        fontSize: 14,
+                        fontSize: 15,
                       )),
                   ],
                 )),
-                // 编辑按钮
+                // 编辑按钮 - 简洁箭头
                 GestureDetector(
-                  onTap: _showEditProfileSheet,
+                  onTap: () {
+                    HapticService.lightImpact();
+                    _showEditProfileSheet();
+                  },
                   child: Container(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: colors.cardBgSecondary,
-                      borderRadius: BorderRadius.circular(12),
+                      shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.chevron_right_rounded, color: colors.textTertiary, size: 22),
+                    child: Icon(
+                      CupertinoIcons.pencil, 
+                      color: colors.textTertiary, 
+                      size: 20,
+                    ),
                   ),
                 ),
               ]),
@@ -214,59 +257,119 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title, AppColors colors) {
+  Widget _buildSectionTitle(String title, IconData icon, AppColors colors) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 12),
-      child: Text(title, style: TextStyle(
-        fontSize: 14, fontWeight: FontWeight.w600, color: colors.textSecondary, letterSpacing: 0.5,
-      )),
+      padding: const EdgeInsets.only(left: 4, bottom: 14),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: colors.textSecondary),
+          const SizedBox(width: 8),
+          Text(title, style: TextStyle(
+            fontSize: 14, 
+            fontWeight: FontWeight.w600, 
+            color: colors.textSecondary, 
+            letterSpacing: 0.5,
+          )),
+        ],
+      ),
     );
   }
 
   Widget _buildSettingCard(AppColors colors, {required List<Widget> children}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: colors.cardBg, borderRadius: BorderRadius.circular(16),
-        boxShadow: colors.cardShadow,
+        color: colors.cardBg, 
+        borderRadius: BorderRadius.circular(18),
+        border: isDark ? Border.all(
+          color: Colors.white.withOpacity(0.06),
+          width: 1,
+        ) : null,
+        boxShadow: isDark ? [] : [
+          BoxShadow(
+            color: const Color(0xFF3A5160).withOpacity(0.08),
+            offset: const Offset(0, 4),
+            blurRadius: 20,
+          ),
+        ],
       ),
-      child: Column(children: children),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: Column(children: children),
+      ),
     );
   }
 
   Widget _buildDivider(AppColors colors) {
     return Padding(
-      padding: const EdgeInsets.only(left: 60),
-      child: Divider(height: 1, color: colors.divider),
+      padding: const EdgeInsets.only(left: 66),
+      child: Divider(height: 1, thickness: 0.5, color: colors.divider),
     );
   }
 
   Widget _buildSettingItem({
-    required IconData icon, required Color iconBg, required String title,
-    String? value, Color? titleColor, bool showArrow = true,
-    VoidCallback? onTap, required AppColors colors,
+    required IconData icon, 
+    required List<Color> iconColors, 
+    required String title,
+    String? value, 
+    Color? titleColor, 
+    bool showArrow = true,
+    VoidCallback? onTap, 
+    required AppColors colors,
   }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap, borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          HapticService.lightImpact();
+          onTap?.call();
+        }, 
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: Row(children: [
+            // 渐变图标背景
             Container(
-              width: 36, height: 36,
-              decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(10)),
+              width: 40, 
+              height: 40,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: iconColors,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: iconColors.first.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
               child: Icon(icon, color: Colors.white, size: 20),
             ),
             const SizedBox(width: 14),
             Expanded(child: Text(title, style: TextStyle(
-              fontSize: 16, fontWeight: FontWeight.w600, color: titleColor ?? colors.textPrimary,
+              fontSize: 16, 
+              fontWeight: FontWeight.w600, 
+              color: titleColor ?? colors.textPrimary,
+              letterSpacing: -0.2,
             ))),
-            if (value != null) Text(value, style: TextStyle(
-              fontSize: 15, fontWeight: FontWeight.w500, color: colors.textSecondary,
-            )),
+            if (value != null) Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: colors.cardBgSecondary,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(value, style: TextStyle(
+                fontSize: 14, 
+                fontWeight: FontWeight.w600, 
+                color: colors.primary,
+              )),
+            ),
             if (showArrow) ...[
-              const SizedBox(width: 4),
-              Icon(Icons.chevron_right_rounded, color: colors.textTertiary, size: 22),
+              const SizedBox(width: 8),
+              Icon(CupertinoIcons.chevron_right, color: colors.textTertiary, size: 18),
             ],
           ]),
         ),
@@ -275,56 +378,112 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildSettingItemWithSwitch({
-    required IconData icon, required Color iconBg, required String title,
-    String? subtitle, required bool value, required Function(bool) onChanged,
+    required IconData icon, 
+    required List<Color> iconColors, 
+    required String title,
+    String? subtitle, 
+    required bool value, 
+    required Function(bool) onChanged,
     required AppColors colors,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Row(children: [
+        // 渐变图标背景
         Container(
-          width: 36, height: 36,
-          decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(10)),
+          width: 40, 
+          height: 40,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: iconColors,
+            ),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: iconColors.first.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
           child: Icon(icon, color: Colors.white, size: 20),
         ),
         const SizedBox(width: 14),
         Expanded(child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: colors.textPrimary)),
+            Text(title, style: TextStyle(
+              fontSize: 16, 
+              fontWeight: FontWeight.w600, 
+              color: colors.textPrimary,
+              letterSpacing: -0.2,
+            )),
             if (subtitle != null) ...[
-              const SizedBox(height: 2),
-              Text(subtitle, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: colors.textSecondary)),
+              const SizedBox(height: 3),
+              Text(subtitle, style: TextStyle(
+                fontSize: 13, 
+                fontWeight: FontWeight.w500, 
+                color: colors.textSecondary,
+              )),
             ],
           ],
         )),
-        _buildSwitch(value, onChanged, colors),
+        _buildEnhancedSwitch(value, onChanged, colors),
       ]),
     );
   }
 
-  Widget _buildSwitch(bool value, Function(bool) onChanged, AppColors colors) {
+  Widget _buildEnhancedSwitch(bool value, Function(bool) onChanged, AppColors colors) {
     return GestureDetector(
       onTap: () => onChanged(!value),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 52, height: 32,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        width: 56, 
+        height: 34,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: value ? LinearGradient(colors: colors.primaryGradient) : null,
+          borderRadius: BorderRadius.circular(17),
+          gradient: value ? LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: colors.primaryGradient,
+          ) : null,
           color: value ? null : colors.divider,
+          boxShadow: value ? [
+            BoxShadow(
+              color: colors.primary.withOpacity(0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ] : [],
         ),
         child: AnimatedAlign(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutBack,
           alignment: value ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
-            width: 28, height: 28,
-            margin: const EdgeInsets.symmetric(horizontal: 2),
+            width: 28, 
+            height: 28,
+            margin: const EdgeInsets.symmetric(horizontal: 3),
             decoration: BoxDecoration(
-              color: Colors.white, borderRadius: BorderRadius.circular(14),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))],
+              color: Colors.white, 
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15), 
+                  blurRadius: 8, 
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
-            child: value ? Icon(Icons.check, size: 16, color: colors.primary) : null,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: value 
+                ? Icon(CupertinoIcons.checkmark_alt, key: const ValueKey('check'), size: 16, color: colors.primary) 
+                : const SizedBox.shrink(key: ValueKey('empty')),
+            ),
           ),
         ),
       ),
