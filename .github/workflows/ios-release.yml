@@ -27,7 +27,6 @@ jobs:
           sed -i '' "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
           echo "Updated version to $NEW_VERSION"
 
-      # 使用 Flutter beta channel (更可能有 3.32.4+)
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -44,7 +43,25 @@ jobs:
           flutter pub get
           flutter precache --ios
           cd ios && pod install --repo-update && cd ..
-          flutter build ios --release --no-codesign
+          
+          # 用 xcodebuild 直接构建，跳过代码签名
+          cd ios
+          xcodebuild -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            ONLY_ACTIVE_ARCH=NO \
+            ENABLE_BITCODE=NO \
+            build \
+            SYMROOT="${PWD}/build"
+          
+          # 复制生成的 .app
+          mkdir -p ../build/ios/iphoneos
+          cp -r build/Release-iphoneos/Runner.app ../build/ios/iphoneos/
 
       - name: Create IPA
         run: |
