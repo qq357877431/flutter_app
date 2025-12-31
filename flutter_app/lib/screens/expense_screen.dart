@@ -494,6 +494,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
           // 4. Bottom Padding
           const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
         ],
+        ),
       ),
     );
   }
