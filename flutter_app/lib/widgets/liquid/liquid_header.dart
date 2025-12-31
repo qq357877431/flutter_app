@@ -1,15 +1,31 @@
-import '../config/colors.dart'; // Add import
+import 'package:flutter/material.dart';
+import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+import '../config/colors.dart';
 
-// ...
+class LiquidHeader extends SliverPersistentHeaderDelegate {
+  final String title;
+  final bool isDark;
+  final List<Widget>? trailing;
+  final double expandedHeight;
 
-    final colors = AppColors(isDark); // Get colors
+  LiquidHeader({
+    required this.title,
+    required this.isDark,
+    this.trailing,
+    this.expandedHeight = 120.0,
+  });
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final progress = shrinkOffset / maxExtent;
+    final isCollapsed = progress > 0.5;
+    final colors = AppColors(isDark);
 
     return Stack(
       fit: StackFit.expand,
       children: [
         // Glass Background
-        LiquidGlass(
-          shape: LiquidRoundedSuperellipse(borderRadius: 0), // Rectangle
+        LiquidGlassLayer(
           settings: LiquidGlassSettings(
             thickness: 0.5,
             blur: 15 + (progress * 10), // Increase blur on scroll
@@ -17,7 +33,10 @@ import '../config/colors.dart'; // Add import
             glassColor: colors.glassColor.withOpacity(progress * 0.8),
             lightIntensity: 0.2,
           ),
-          child: Container(),
+          child: LiquidGlass(
+            shape: LiquidRoundedSuperellipse(borderRadius: 0), // Rectangle
+            child: Container(),
+          ),
         ),
 
         // Title

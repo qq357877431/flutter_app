@@ -23,8 +23,7 @@ class LiquidCheckbox extends StatelessWidget {
         child: LiquidStretch(
           stretch: value ? 0.2 : 0.0,
           interactionScale: value ? 1.1 : 1.0,
-          child: LiquidGlass(
-            shape: LiquidRoundedSuperellipse(borderRadius: 12),
+          child: LiquidGlassLayer(
             settings: LiquidGlassSettings(
               thickness: 0.3,
               blur: 2,
@@ -32,17 +31,20 @@ class LiquidCheckbox extends StatelessWidget {
               glassColor: value ? activeColor.withOpacity(0.8) : Colors.transparent,
               lightIntensity: 0.3,
             ),
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: value ? activeColor : Colors.grey.withOpacity(0.5),
-                  width: 2,
+            child: LiquidGlass(
+              shape: LiquidRoundedSuperellipse(borderRadius: 12),
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: value ? activeColor : Colors.grey.withOpacity(0.5),
+                    width: 2,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                borderRadius: BorderRadius.circular(12),
+                child: value
+                    ? const Icon(Icons.check, size: 16, color: Colors.white)
+                    : null,
               ),
-              child: value
-                  ? const Icon(Icons.check, size: 16, color: Colors.white)
-                  : null,
             ),
           ),
         ),
