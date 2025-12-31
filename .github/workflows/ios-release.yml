@@ -18,74 +18,33 @@ jobs:
       - name: Auto increment version
         working-directory: flutter_app
         run: |
-          # 获取当前版本号
           CURRENT_VERSION=$(grep "^version:" pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
           CURRENT_BUILD=$(grep "^version:" pubspec.yaml | awk '{print $2}' | cut -d'+' -f2)
-          
-          # 递增 patch 版本
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
           NEW_PATCH=$((PATCH + 1))
           NEW_BUILD=$((CURRENT_BUILD + 1))
           NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH+$NEW_BUILD"
-          
-          # 更新 pubspec.yaml (macOS sed 需要 -i '')
           sed -i '' "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
           echo "Updated version to $NEW_VERSION"
 
-      # 使用 Flutter master 分支获取最新版本 (liquid_glass_renderer 需要 3.32.4+)
-      - name: Clone Flutter (master branch)
-        run: |
-          git clone https://github.com/flutter/flutter.git -b master --depth 1 $HOME/flutter
-          echo "$HOME/flutter/bin" >> $GITHUB_PATH
-
+      # 使用 Flutter beta channel (更可能有 3.32.4+)
       - name: Setup Flutter
-        run: |
-          flutter config --no-analytics
-          flutter doctor -v
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'master'
+          cache: false
+
+      - name: Flutter version
+        run: flutter --version
 
       - name: Build iOS
         working-directory: flutter_app
         run: |
-          # 清理之前的构建
           flutter clean
           flutter pub get
-          
-          # 预缓存 iOS 工具
           flutter precache --ios
-          
-          # 方法1: 使用 flutter build ios 直接构建
-          flutter build ios --release --no-codesign --no-tree-shake-icons || {
-            echo "Flutter build failed, trying alternative method..."
-            
-            # 方法2: 先构建 Dart 代码，然后用 xcodebuild
-            # 重新安装 pods
-            cd ios
-            rm -rf Pods Podfile.lock
-            pod install --repo-update
-            
-            # 设置 Flutter 环境变量
-            export FLUTTER_ROOT=$HOME/flutter
-            export FLUTTER_BUILD_NAME=$(grep "^version:" ../pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
-            export FLUTTER_BUILD_NUMBER=$(grep "^version:" ../pubspec.yaml | awk '{print $2}' | cut -d'+' -f2)
-            
-            # 使用 xcodebuild
-            xcodebuild -workspace Runner.xcworkspace \
-              -scheme Runner \
-              -configuration Release \
-              -sdk iphoneos \
-              -destination 'generic/platform=iOS' \
-              CODE_SIGN_IDENTITY="" \
-              CODE_SIGNING_REQUIRED=NO \
-              CODE_SIGNING_ALLOWED=NO \
-              ONLY_ACTIVE_ARCH=NO \
-              ENABLE_BITCODE=NO \
-              build \
-              SYMROOT="${PWD}/build"
-            
-            # 复制生成的 .app 到正确位置
-            mkdir -p ../build/ios/iphoneos
-            cp -r build/Release-iphoneos/Runner.app ../build/ios/iphoneos/
-          }
+          cd ios && pod install --repo-update && cd ..
+          flutter build ios --release --no-codesign
 
       - name: Create IPA
         run: |
