@@ -11,6 +11,7 @@ import '../services/notification_service.dart';
 import '../widgets/liquid/fluid_background.dart';
 import '../widgets/liquid/liquid_card.dart';
 import '../widgets/liquid/liquid_checkbox.dart';
+import '../widgets/liquid/liquid_header.dart';
 
 class PlanScreen extends ConsumerStatefulWidget {
   const PlanScreen({super.key});
