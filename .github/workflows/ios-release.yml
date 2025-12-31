@@ -53,30 +53,39 @@ jobs:
           # 预缓存 iOS 工具
           flutter precache --ios
           
-          # 重新安装 pods (因为 flutter clean 删除了 Pods 文件夹)
-          cd ios
-          rm -rf Pods Podfile.lock
-          pod install --repo-update
-          cd ..
-          
-          # 使用 xcodebuild build
-          cd ios
-          xcodebuild -workspace Runner.xcworkspace \
-            -scheme Runner \
-            -configuration Release \
-            -sdk iphoneos \
-            -destination 'generic/platform=iOS' \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            ONLY_ACTIVE_ARCH=NO \
-            ENABLE_BITCODE=NO \
-            build \
-            SYMROOT="${PWD}/build"
-          
-          # 复制生成的 .app 到正确位置
-          mkdir -p ../build/ios/iphoneos
-          cp -r build/Release-iphoneos/Runner.app ../build/ios/iphoneos/
+          # 方法1: 使用 flutter build ios 直接构建
+          flutter build ios --release --no-codesign --no-tree-shake-icons || {
+            echo "Flutter build failed, trying alternative method..."
+            
+            # 方法2: 先构建 Dart 代码，然后用 xcodebuild
+            # 重新安装 pods
+            cd ios
+            rm -rf Pods Podfile.lock
+            pod install --repo-update
+            
+            # 设置 Flutter 环境变量
+            export FLUTTER_ROOT=$HOME/flutter
+            export FLUTTER_BUILD_NAME=$(grep "^version:" ../pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+            export FLUTTER_BUILD_NUMBER=$(grep "^version:" ../pubspec.yaml | awk '{print $2}' | cut -d'+' -f2)
+            
+            # 使用 xcodebuild
+            xcodebuild -workspace Runner.xcworkspace \
+              -scheme Runner \
+              -configuration Release \
+              -sdk iphoneos \
+              -destination 'generic/platform=iOS' \
+              CODE_SIGN_IDENTITY="" \
+              CODE_SIGNING_REQUIRED=NO \
+              CODE_SIGNING_ALLOWED=NO \
+              ONLY_ACTIVE_ARCH=NO \
+              ENABLE_BITCODE=NO \
+              build \
+              SYMROOT="${PWD}/build"
+            
+            # 复制生成的 .app 到正确位置
+            mkdir -p ../build/ios/iphoneos
+            cp -r build/Release-iphoneos/Runner.app ../build/ios/iphoneos/
+          }
 
       - name: Create IPA
         run: |
