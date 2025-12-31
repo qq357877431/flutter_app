@@ -269,8 +269,6 @@ class _iOS26LiquidGlassNavBarState extends State<_iOS26LiquidGlassNavBar> {
                       : const Color(0x28FFFFFF),
                   lightAngle: -0.7,
                   lightIntensity: widget.isDark ? 0.4 : 0.6,
-                  outlineIntensity: 0.3,
-                  saturation: 1.1,  // 稍微增加饱和度，Apple风格
                 ),
                 child: LiquidGlassBlendGroup(
                   blend: 18.0,  // 增大融合程度，让过渡更流畅
