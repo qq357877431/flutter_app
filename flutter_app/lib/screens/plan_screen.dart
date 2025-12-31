@@ -8,6 +8,9 @@ import '../providers/auth_provider.dart';
 import '../providers/plan_provider.dart';
 import '../services/haptic_service.dart';
 import '../services/notification_service.dart';
+import '../widgets/liquid/fluid_background.dart';
+import '../widgets/liquid/liquid_card.dart';
+import '../widgets/liquid/liquid_checkbox.dart';
 
 class PlanScreen extends ConsumerStatefulWidget {
   const PlanScreen({super.key});
@@ -61,7 +64,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
           top: 20, left: 24, right: 24,
         ),
         decoration: BoxDecoration(
-          color: colors.cardBg,
+          color: colors.cardBg.withOpacity(0.9), // Slightly transparent for glass feel
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
@@ -164,7 +167,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
         height: 340,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: colors.cardBg,
+          color: colors.cardBg.withOpacity(0.9),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
@@ -227,169 +230,156 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colors = AppColors(isDark);
 
-    return CupertinoPageScaffold(
-      backgroundColor: colors.scaffoldBg,
-      child: CustomScrollView(
-        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-        slivers: [
-          // 1. Sliver Navigation Bar
-          CupertinoSliverNavigationBar(
-            largeTitle: Text(
-              '每日计划',
-              style: TextStyle(color: colors.textPrimary),
-            ),
-            backgroundColor: colors.scaffoldBg.withOpacity(0.8),
-            border: null, // Remove default border for cleaner look
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Date Picker Button
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: _showDatePicker,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: colors.cardBgSecondary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(CupertinoIcons.calendar, color: colors.primary, size: 20),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Add Plan Button (Moved to top)
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: _showAddPlanSheet,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: colors.primaryGradient),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colors.primary.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(CupertinoIcons.add, color: Colors.white, size: 16),
-                        SizedBox(width: 4),
-                        Text(
-                          '添加',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // 2. Date & Progress Summary Card
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: colors.cardBg,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
-                      blurRadius: 20,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
+    return FluidBackground(
+      isDark: isDark,
+      child: CupertinoPageScaffold(
+        backgroundColor: Colors.transparent, // Transparent to show FluidBackground
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+          slivers: [
+            // 1. Sliver Navigation Bar with Glass Effect
+            // 1. Liquid Header
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: LiquidHeader(
+                title: '每日计划',
+                isDark: isDark,
+                trailing: [
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: _showDatePicker,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: colors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
+                        color: colors.cardBgSecondary.withOpacity(0.6),
+                        shape: BoxShape.circle,
                       ),
-                      child: Icon(CupertinoIcons.calendar_today, color: colors.primary, size: 28),
+                      child: Icon(CupertinoIcons.calendar, color: colors.primary, size: 20),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            dateFormat.format(planState.selectedDate),
-                            style: TextStyle(
-                              color: colors.textPrimary,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.3,
-                            ),
+                  ),
+                  const SizedBox(width: 8),
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: _showAddPlanSheet,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(colors: colors.primaryGradient),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colors.primary.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
-                          const SizedBox(height: 4),
+                        ],
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(CupertinoIcons.add, color: Colors.white, size: 16),
+                          SizedBox(width: 4),
                           Text(
-                            '${planState.plans.length} 个计划 · ${planState.plans.where((p) => p.isCompleted).length} 已完成',
-                            style: TextStyle(color: colors.textSecondary, fontSize: 13),
+                            '添加',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    // Circular Progress
-                    _buildCircularProgress(planState.plans, colors),
-                  ],
+                  ),
+                ],
+              ),
+            ),
+
+            // 2. Date & Progress Summary Card (Liquid Card)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+                child: LiquidCard(
+                  isDark: isDark,
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: colors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Icon(CupertinoIcons.calendar_today, color: colors.primary, size: 28),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              dateFormat.format(planState.selectedDate),
+                              style: TextStyle(
+                                color: colors.textPrimary,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${planState.plans.length} 个计划 · ${planState.plans.where((p) => p.isCompleted).length} 已完成',
+                              style: TextStyle(color: colors.textSecondary, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      ),
+                      _buildCircularProgress(planState.plans, colors),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
 
-          // 3. Plan List
-          if (planState.isLoading)
-            const SliverFillRemaining(
-              child: Center(child: CupertinoActivityIndicator()),
-            )
-          else if (planState.plans.isEmpty)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: _buildEmptyState(colors),
-            )
-          else
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (ctx, i) {
-                  final plan = planState.plans[i];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-                    child: _PlanTile(
-                      plan: plan,
-                      colors: colors,
-                      onToggle: () async {
-                        HapticService.mediumImpact();
-                        await ref.read(planProvider.notifier).togglePlanStatus(plan);
-                        _checkAndScheduleReminder();
-                      },
-                      onDelete: () async {
-                        await ref.read(planProvider.notifier).deletePlan(plan.id!);
-                        _checkAndScheduleReminder();
-                      },
-                    ),
-                  );
-                },
-                childCount: planState.plans.length,
+            // 3. Plan List
+            if (planState.isLoading)
+              const SliverFillRemaining(
+                child: Center(child: CupertinoActivityIndicator()),
+              )
+            else if (planState.plans.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: _buildEmptyState(colors),
+              )
+            else
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (ctx, i) {
+                    final plan = planState.plans[i];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                      child: _PlanTile(
+                        plan: plan,
+                        colors: colors,
+                        isDark: isDark,
+                        onToggle: () async {
+                          HapticService.mediumImpact();
+                          await ref.read(planProvider.notifier).togglePlanStatus(plan);
+                          _checkAndScheduleReminder();
+                        },
+                        onDelete: () async {
+                          await ref.read(planProvider.notifier).deletePlan(plan.id!);
+                          _checkAndScheduleReminder();
+                        },
+                      ),
+                    );
+                  },
+                  childCount: planState.plans.length,
+                ),
               ),
-            ),
 
-          // 4. Bottom Padding for scrolling
-          const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
-        ],
+            // 4. Bottom Padding
+            const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
+          ],
+        ),
       ),
     );
   }
@@ -408,7 +398,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
           CircularProgressIndicator(
             value: progress,
             strokeWidth: 4,
-            backgroundColor: colors.divider,
+            backgroundColor: colors.divider.withOpacity(0.3),
             valueColor: AlwaysStoppedAnimation<Color>(colors.success),
             strokeCap: StrokeCap.round,
           ),
@@ -461,12 +451,14 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
 class _PlanTile extends StatelessWidget {
   final Plan plan;
   final AppColors colors;
+  final bool isDark;
   final VoidCallback onToggle;
   final VoidCallback onDelete;
 
   const _PlanTile({
     required this.plan,
     required this.colors,
+    required this.isDark,
     required this.onToggle,
     required this.onDelete,
   });
@@ -478,73 +470,47 @@ class _PlanTile extends StatelessWidget {
       direction: DismissDirection.endToStart,
       background: Container(
         decoration: BoxDecoration(
-          color: colors.red,
-          borderRadius: BorderRadius.circular(16),
+          color: colors.red.withOpacity(0.8),
+          borderRadius: BorderRadius.circular(24),
         ),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         child: const Icon(CupertinoIcons.delete, color: Colors.white),
       ),
       onDismissed: (_) => onDelete(),
-      child: Container(
-        decoration: BoxDecoration(
-          color: colors.cardBg,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: onToggle,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  // Animated Checkbox
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: plan.isCompleted ? colors.success : Colors.transparent,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: plan.isCompleted ? colors.success : colors.textTertiary,
-                        width: 2,
-                      ),
-                    ),
-                    child: plan.isCompleted
-                        ? const Icon(CupertinoIcons.checkmark, size: 14, color: Colors.white)
-                        : null,
-                  ),
-                  const SizedBox(width: 16),
-                  // Content
-                  Expanded(
-                    child: AnimatedOpacity(
-                      duration: const Duration(milliseconds: 200),
-                      opacity: plan.isCompleted ? 0.5 : 1.0,
-                      child: Text(
-                        plan.content,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          decoration: plan.isCompleted ? TextDecoration.lineThrough : null,
-                          decorationColor: colors.textTertiary,
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+      child: LiquidCard(
+        isDark: isDark,
+        padding: EdgeInsets.zero,
+        onTap: onToggle,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Liquid Checkbox
+              LiquidCheckbox(
+                value: plan.isCompleted,
+                onChanged: (_) => onToggle(),
+                activeColor: colors.success,
               ),
-            ),
+              const SizedBox(width: 16),
+              // Content
+              Expanded(
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: plan.isCompleted ? 0.5 : 1.0,
+                  child: Text(
+                    plan.content,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      decoration: plan.isCompleted ? TextDecoration.lineThrough : null,
+                      decorationColor: colors.textTertiary,
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

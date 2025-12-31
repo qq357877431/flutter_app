@@ -77,6 +77,15 @@ class AppColors {
   
   // 阴影透明度
   double get shadowOpacity => isDark ? 0.3 : 0.15;
+
+  // 玻璃拟态颜色
+  Color get glassColor => isDark 
+      ? const Color(0xCC000000) 
+      : const Color(0xCCFFFFFF);
+      
+  Color get glassBorder => isDark 
+      ? Colors.white.withOpacity(0.1) 
+      : Colors.white.withOpacity(0.4);
   
   // 渐变色 - 深色模式下颜色变暗
   List<Color> get primaryGradient => isDark 

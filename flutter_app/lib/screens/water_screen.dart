@@ -557,39 +557,33 @@ class _WaterScreenState extends ConsumerState<WaterScreen> with SingleTickerProv
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            // 顶部标题栏
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('喝水记录', style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: colors.textPrimary,
-                    )),
-                    GestureDetector(
-                      onTap: _showReminderSettings,
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: _reminderEnabled 
-                              ? colors.blue.withOpacity(0.15)
-                              : colors.cardBgSecondary,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          _reminderEnabled 
-                              ? Icons.notifications_active_rounded
-                              : Icons.notifications_none_rounded,
-                          color: _reminderEnabled ? colors.blue : colors.textSecondary,
-                          size: 22,
-                        ),
+            // 顶部标题栏 (Liquid Header)
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: LiquidHeader(
+                title: '喝水记录',
+                isDark: isDark,
+                trailing: [
+                  GestureDetector(
+                    onTap: _showReminderSettings,
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: _reminderEnabled 
+                            ? colors.blue.withOpacity(0.15)
+                            : colors.cardBgSecondary.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        _reminderEnabled 
+                            ? Icons.notifications_active_rounded
+                            : Icons.notifications_none_rounded,
+                        color: _reminderEnabled ? colors.blue : colors.textSecondary,
+                        size: 22,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
             
@@ -814,8 +808,9 @@ class _WaterScreenState extends ConsumerState<WaterScreen> with SingleTickerProv
     );
   }
 
-  Widget _buildRecordItem(int index, AppColors colors) {
+  Widget _buildRecordItem(int index, AppColors colors, bool isDark) {
     final record = _records[index];
+    final color = Color(record.color);
     final time = '${record.time.hour.toString().padLeft(2, '0')}:${record.time.minute.toString().padLeft(2, '0')}';
     
     return Dismissible(
@@ -827,25 +822,25 @@ class _WaterScreenState extends ConsumerState<WaterScreen> with SingleTickerProv
         padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
           gradient: LinearGradient(colors: colors.redGradient),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(24),
         ),
         child: const Icon(Icons.delete_rounded, color: Colors.white),
       ),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: colors.cardDecoration(),
+      child: LiquidCard(
+        isDark: isDark,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
             Container(
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: Color(record.color).withOpacity(0.15),
+                color: color.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 IconData(record.icon, fontFamily: 'MaterialIcons'),
-                color: Color(record.color),
+                color: color,
                 size: 22,
               ),
             ),
@@ -856,7 +851,7 @@ class _WaterScreenState extends ConsumerState<WaterScreen> with SingleTickerProv
                 children: [
                   Text(record.type, style: TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                     color: colors.textPrimary,
                   )),
                   const SizedBox(height: 2),
