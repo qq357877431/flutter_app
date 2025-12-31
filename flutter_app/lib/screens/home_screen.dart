@@ -262,13 +262,14 @@ class _iOS26LiquidGlassNavBarState extends State<_iOS26LiquidGlassNavBar> {
               height: 72,
               child: LiquidGlassLayer(
                 settings: LiquidGlassSettings(
-                  thickness: widget.isDark ? 12 : 15,
-                  blur: widget.isDark ? 6 : 8,
+                  thickness: 0.8,
+                  refractiveIndex: 1.5,
+                  blur: 5.0,
                   glassColor: widget.isDark 
                       ? const Color(0x30000000)
                       : const Color(0x28FFFFFF),
                   lightAngle: -0.7,
-                  lightIntensity: widget.isDark ? 0.4 : 0.6,
+                  lightIntensity: 0.7,
                 ),
                 child: LiquidGlassBlendGroup(
                   blend: 18.0,  // 增大融合程度，让过渡更流畅
