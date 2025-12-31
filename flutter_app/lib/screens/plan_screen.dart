@@ -301,6 +301,7 @@ class _PlanScreenState extends ConsumerState<PlanScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
                 child: LiquidCard(
                   isDark: isDark,
+                  borderColor: colors.glassBorder,
                   child: Row(
                     children: [
                       Container(
@@ -481,6 +482,7 @@ class _PlanTile extends StatelessWidget {
       onDismissed: (_) => onDelete(),
       child: LiquidCard(
         isDark: isDark,
+        borderColor: colors.glassBorder,
         padding: EdgeInsets.zero,
         onTap: onToggle,
         child: Padding(

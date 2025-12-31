@@ -6,6 +6,8 @@ import '../config/colors.dart';
 import '../models/expense.dart';
 import '../providers/expense_provider.dart';
 import '../services/haptic_service.dart';
+import '../widgets/liquid/fluid_background.dart';
+import '../widgets/liquid/liquid_header.dart';
 
 class ExpenseScreen extends ConsumerStatefulWidget {
   const ExpenseScreen({super.key});
@@ -279,89 +281,87 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colors = AppColors(isDark);
 
-    return CupertinoPageScaffold(
-      backgroundColor: colors.scaffoldBg,
-      child: CustomScrollView(
-        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-        slivers: [
-          // 1. Sliver Navigation Bar
-          CupertinoSliverNavigationBar(
-            largeTitle: Text(
-              '消费记录',
-              style: TextStyle(color: colors.textPrimary),
-            ),
-            backgroundColor: colors.scaffoldBg.withOpacity(0.8),
-            border: null,
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Filter Button (First)
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: () {
-                    HapticService.lightImpact();
-                    _showDateFilter();
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: (_selectedYear != null || _selectedMonth != null) 
-                          ? colors.green.withOpacity(0.15)
-                          : colors.cardBgSecondary,
-                      shape: BoxShape.circle,
-                      border: (_selectedYear != null || _selectedMonth != null)
-                          ? Border.all(color: colors.green, width: 1)
-                          : null,
-                    ),
-                    child: Icon(
-                      CupertinoIcons.calendar,
-                      size: 20,
-                      color: (_selectedYear != null || _selectedMonth != null)
-                          ? colors.green
-                          : colors.primary,
+    return FluidBackground(
+      isDark: isDark,
+      child: CupertinoPageScaffold(
+        backgroundColor: Colors.transparent,
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+          slivers: [
+            // 1. Liquid Header
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: LiquidHeader(
+                title: '消费记录',
+                isDark: isDark,
+                trailing: [
+                  // Filter Button (First)
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: () {
+                      HapticService.lightImpact();
+                      _showDateFilter();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: (_selectedYear != null || _selectedMonth != null) 
+                            ? colors.green.withOpacity(0.15)
+                            : colors.cardBgSecondary.withOpacity(0.6),
+                        shape: BoxShape.circle,
+                        border: (_selectedYear != null || _selectedMonth != null)
+                            ? Border.all(color: colors.green, width: 1)
+                            : null,
+                      ),
+                      child: Icon(
+                        CupertinoIcons.calendar,
+                        size: 20,
+                        color: (_selectedYear != null || _selectedMonth != null)
+                            ? colors.green
+                            : colors.green, // Changed to green as requested
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                // Add Expense Button (Second)
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: () {
-                    HapticService.lightImpact();
-                    _showAddExpenseSheet();
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: colors.greenGradient),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colors.green.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(CupertinoIcons.add, color: Colors.white, size: 16),
-                        SizedBox(width: 4),
-                        Text(
-                          '记一笔',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                  const SizedBox(width: 8),
+                  // Add Expense Button (Second)
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: () {
+                      HapticService.lightImpact();
+                      _showAddExpenseSheet();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(colors: colors.greenGradient),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colors.green.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(CupertinoIcons.add, color: Colors.white, size: 16),
+                          SizedBox(width: 4),
+                          Text(
+                            '记一笔',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
 
           // 2. Summary Card
           SliverToBoxAdapter(

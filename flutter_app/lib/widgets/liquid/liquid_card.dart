@@ -9,7 +9,7 @@ class LiquidCard extends StatelessWidget {
   final double? height;
   final EdgeInsetsGeometry? padding;
   final EdgeInsetsGeometry? margin;
-  final VoidCallback? onTap;
+  final Color? borderColor;
 
   const LiquidCard({
     super.key,
@@ -20,6 +20,7 @@ class LiquidCard extends StatelessWidget {
     this.padding,
     this.margin,
     this.onTap,
+    this.borderColor,
   });
 
   @override
@@ -54,7 +55,15 @@ class LiquidCard extends StatelessWidget {
         ),
         child: LiquidGlass(
           shape: LiquidRoundedSuperellipse(borderRadius: 24),
-          child: content,
+          child: Container(
+            decoration: BoxDecoration(
+              border: borderColor != null 
+                  ? Border.all(color: borderColor!, width: 1.5) 
+                  : null,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: content,
+          ),
         ),
       ),
     );

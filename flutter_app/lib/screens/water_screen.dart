@@ -555,10 +555,12 @@ class _WaterScreenState extends ConsumerState<WaterScreen> with SingleTickerProv
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colors = AppColors(isDark);
     
-    return Scaffold(
-      backgroundColor: colors.scaffoldBg,
-      body: SafeArea(
+    return FluidBackground(
+      isDark: isDark,
+      child: CupertinoPageScaffold(
+        backgroundColor: Colors.transparent,
         child: CustomScrollView(
+          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
           slivers: [
             // 顶部标题栏 (Liquid Header)
             SliverPersistentHeader(
