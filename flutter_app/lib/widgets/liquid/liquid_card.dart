@@ -9,6 +9,7 @@ class LiquidCard extends StatelessWidget {
   final double? height;
   final EdgeInsetsGeometry? padding;
   final EdgeInsetsGeometry? margin;
+  final VoidCallback? onTap;
   final Color? borderColor;
 
   const LiquidCard({
