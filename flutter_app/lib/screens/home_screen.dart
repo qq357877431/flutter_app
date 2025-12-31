@@ -282,22 +282,9 @@ class _iOS26LiquidGlassNavBarState extends State<_iOS26LiquidGlassNavBar> {
                           child: Container(
                             decoration: BoxDecoration(
                               color: widget.isDark 
-                                  ? Colors.black.withOpacity(0.35)
-                                  : Colors.white.withOpacity(0.45),
+                                  ? Colors.black.withOpacity(0.2)
+                                  : Colors.white.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(36),
-                              border: Border.all(
-                                color: widget.isDark 
-                                    ? Colors.white.withOpacity(0.25)
-                                    : Colors.white.withOpacity(0.6),
-                                width: 1.5,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(widget.isDark ? 0.45 : 0.15),
-                                  blurRadius: 24,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
                             ),
                           ),
                         ),
@@ -320,15 +307,11 @@ class _iOS26LiquidGlassNavBarState extends State<_iOS26LiquidGlassNavBar> {
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                     colors: [
-                                      widget.tabColors[_highlightedIndex].withOpacity(widget.isDark ? 0.45 : 0.35),
-                                      widget.tabColors[_highlightedIndex].withOpacity(widget.isDark ? 0.25 : 0.18),
+                                      widget.tabColors[_highlightedIndex].withOpacity(widget.isDark ? 0.5 : 0.4),
+                                      widget.tabColors[_highlightedIndex].withOpacity(widget.isDark ? 0.3 : 0.2),
                                     ],
                                   ),
                                   borderRadius: BorderRadius.circular(26),
-                                  border: Border.all(
-                                    color: widget.tabColors[_highlightedIndex].withOpacity(widget.isDark ? 0.55 : 0.45),
-                                    width: 1.5,
-                                  ),
                                 ),
                                 // 顶部高光
                                 child: ClipRRect(
