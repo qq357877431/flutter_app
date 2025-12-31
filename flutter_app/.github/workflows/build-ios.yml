@@ -17,9 +17,12 @@ jobs:
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.32.2'
+        flutter-version: '3.32.4'
         channel: 'stable'
-        cache: true
+        cache: false  # 禁用缓存确保使用指定版本
+    
+    - name: Check Flutter version
+      run: flutter --version
     
     - name: Get dependencies
       run: flutter pub get
