@@ -32,12 +32,16 @@ jobs:
           sed -i '' "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
           echo "Updated version to $NEW_VERSION"
 
+      # 使用 Flutter master 分支获取最新版本 (liquid_glass_renderer 需要 3.32.4+)
+      - name: Clone Flutter (master branch)
+        run: |
+          git clone https://github.com/flutter/flutter.git -b master --depth 1 $HOME/flutter
+          echo "$HOME/flutter/bin" >> $GITHUB_PATH
+
       - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.27.0'
-          channel: 'stable'
-          cache: true
+        run: |
+          flutter config --no-analytics
+          flutter doctor -v
 
       - name: Install dependencies
         working-directory: flutter_app
