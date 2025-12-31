@@ -59,28 +59,26 @@ jobs:
           # 清理之前的构建
           flutter clean
           flutter pub get
-          # 构建 iOS (使用 archive 方式避免 Run Script 问题)
-          flutter build ios --release --no-codesign --no-tree-shake-icons 2>&1 || true
           
-          # 如果上面失败，尝试直接用 xcodebuild
-          if [ ! -d "build/ios/iphoneos/Runner.app" ]; then
-            echo "Flutter build failed, trying xcodebuild directly..."
-            cd ios
-            xcodebuild -workspace Runner.xcworkspace \
-              -scheme Runner \
-              -configuration Release \
-              -sdk iphoneos \
-              -destination 'generic/platform=iOS' \
-              CODE_SIGN_IDENTITY="" \
-              CODE_SIGNING_REQUIRED=NO \
-              CODE_SIGNING_ALLOWED=NO \
-              ONLY_ACTIVE_ARCH=NO \
-              archive -archivePath build/Runner.xcarchive
-            
-            # 从 archive 中提取 app
-            mkdir -p ../build/ios/iphoneos
-            cp -r build/Runner.xcarchive/Products/Applications/Runner.app ../build/ios/iphoneos/
-          fi
+          # 直接使用 xcodebuild build 而不是 archive (避免 Run Script 问题)
+          cd ios
+          xcodebuild -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            ONLY_ACTIVE_ARCH=NO \
+            ENABLE_BITCODE=NO \
+            BUILD_LIBRARY_FOR_DISTRIBUTION=NO \
+            build \
+            SYMROOT="${PWD}/build"
+          
+          # 复制生成的 .app 到正确位置
+          mkdir -p ../build/ios/iphoneos
+          cp -r build/Release-iphoneos/Runner.app ../build/ios/iphoneos/
 
       - name: Create IPA
         run: |
