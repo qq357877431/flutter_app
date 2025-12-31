@@ -8,6 +8,9 @@ import '../config/colors.dart';
 import '../providers/auth_provider.dart';
 import '../services/haptic_service.dart';
 import '../services/notification_service.dart';
+import '../widgets/liquid/fluid_background.dart';
+import '../widgets/liquid/liquid_card.dart';
+import '../widgets/liquid/liquid_header.dart';
 
 class WaterScreen extends ConsumerStatefulWidget {
   const WaterScreen({super.key});
@@ -738,7 +741,7 @@ class _WaterScreenState extends ConsumerState<WaterScreen> with SingleTickerProv
                     delegate: SliverChildBuilderDelegate(
                       (context, index) => Padding(
                         padding: EdgeInsets.fromLTRB(20, 0, 20, index == _records.length - 1 ? 100 : 8),
-                        child: _buildRecordItem(index, colors),
+                        child: _buildRecordItem(index, colors, isDark),
                       ),
                       childCount: _records.length,
                     ),

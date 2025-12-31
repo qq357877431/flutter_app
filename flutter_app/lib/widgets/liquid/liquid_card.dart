@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
-import '../config/colors.dart';
+import '../../config/colors.dart';
 
 class LiquidCard extends StatelessWidget {
   final Widget child;
