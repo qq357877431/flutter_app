@@ -14,15 +14,16 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Setup Flutter
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.32.4'
-        channel: 'stable'
-        cache: false  # 禁用缓存确保使用指定版本
+    # 直接从 Flutter master channel 安装（包含最新版本）
+    - name: Clone Flutter
+      run: |
+        git clone https://github.com/flutter/flutter.git -b master --depth 1 $HOME/flutter
+        echo "$HOME/flutter/bin" >> $GITHUB_PATH
     
-    - name: Check Flutter version
-      run: flutter --version
+    - name: Setup Flutter
+      run: |
+        flutter precache --ios
+        flutter doctor -v
     
     - name: Get dependencies
       run: flutter pub get
