@@ -262,40 +262,41 @@ class _iOS26LiquidGlassNavBarState extends State<_iOS26LiquidGlassNavBar> {
               height: 72,
               child: LiquidGlassLayer(
                 settings: LiquidGlassSettings(
-                  thickness: widget.isDark ? 10 : 12,
-                  blur: widget.isDark ? 5 : 6,
+                  thickness: widget.isDark ? 12 : 15,
+                  blur: widget.isDark ? 6 : 8,
                   glassColor: widget.isDark 
-                      ? const Color(0x28000000)
-                      : const Color(0x22FFFFFF),
+                      ? const Color(0x30000000)
+                      : const Color(0x28FFFFFF),
                   lightAngle: -0.7,
-                  lightIntensity: widget.isDark ? 0.35 : 0.5,
+                  lightIntensity: widget.isDark ? 0.4 : 0.6,
+                  outlineIntensity: 0.3,
+                  saturation: 1.1,  // 稍微增加饱和度，Apple风格
                 ),
                 child: LiquidGlassBlendGroup(
-                  blend: 12.0,  // 融合程度，让指示器和背景像液体一样融合
+                  blend: 18.0,  // 增大融合程度，让过渡更流畅
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      // 导航栏背景玻璃
                       Positioned.fill(
                         child: LiquidGlass.grouped(
-                          shape: LiquidRoundedSuperellipse(borderRadius: 24),
+                          shape: LiquidRoundedSuperellipse(borderRadius: 36),  // 加大圆角
                           child: Container(
                             decoration: BoxDecoration(
                               color: widget.isDark 
-                                  ? Colors.black.withOpacity(0.3)
-                                  : Colors.white.withOpacity(0.4),
-                              borderRadius: BorderRadius.circular(24),
+                                  ? Colors.black.withOpacity(0.35)
+                                  : Colors.white.withOpacity(0.45),
+                              borderRadius: BorderRadius.circular(36),
                               border: Border.all(
                                 color: widget.isDark 
-                                    ? Colors.white.withOpacity(0.2)
-                                    : Colors.white.withOpacity(0.55),
+                                    ? Colors.white.withOpacity(0.25)
+                                    : Colors.white.withOpacity(0.6),
                                 width: 1.5,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(widget.isDark ? 0.4 : 0.12),
-                                  blurRadius: 18,
-                                  offset: const Offset(0, 6),
+                                  color: Colors.black.withOpacity(widget.isDark ? 0.45 : 0.15),
+                                  blurRadius: 24,
+                                  offset: const Offset(0, 8),
                                 ),
                               ],
                             ),
@@ -304,45 +305,45 @@ class _iOS26LiquidGlassNavBarState extends State<_iOS26LiquidGlassNavBar> {
                       ),
                       // 液态滑动指示器（像水滴一样滑动）
                       Positioned(
-                        left: widget.indicatorPosition * itemWidth + 6,
-                        top: 6,
-                        bottom: 6,
+                        left: widget.indicatorPosition * itemWidth + 8,
+                        top: 8,
+                        bottom: 8,
                         child: LiquidStretch(
-                          stretch: _isNavBarPressed ? 0.6 : 0.3,  // 按下时更多拉伸
-                          interactionScale: _isNavBarPressed ? 1.08 : 1.0,  // 按下时向外扩散
+                          stretch: _isNavBarPressed ? 0.7 : 0.35,  // 按下时更多拉伸
+                          interactionScale: _isNavBarPressed ? 1.1 : 1.0,  // 按下时向外扩散
                           child: SizedBox(
-                            width: itemWidth - 12,
+                            width: itemWidth - 16,
                             child: LiquidGlass.grouped(
-                              shape: LiquidRoundedSuperellipse(borderRadius: 18),
+                              shape: LiquidRoundedSuperellipse(borderRadius: 26),  // 加大圆角
                               child: Container(
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                     colors: [
-                                      widget.tabColors[_highlightedIndex].withOpacity(widget.isDark ? 0.4 : 0.3),
-                                      widget.tabColors[_highlightedIndex].withOpacity(widget.isDark ? 0.2 : 0.15),
+                                      widget.tabColors[_highlightedIndex].withOpacity(widget.isDark ? 0.45 : 0.35),
+                                      widget.tabColors[_highlightedIndex].withOpacity(widget.isDark ? 0.25 : 0.18),
                                     ],
                                   ),
-                                  borderRadius: BorderRadius.circular(18),
+                                  borderRadius: BorderRadius.circular(26),
                                   border: Border.all(
-                                    color: widget.tabColors[_highlightedIndex].withOpacity(widget.isDark ? 0.5 : 0.4),
+                                    color: widget.tabColors[_highlightedIndex].withOpacity(widget.isDark ? 0.55 : 0.45),
                                     width: 1.5,
                                   ),
                                 ),
                                 // 顶部高光
                                 child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(18),
+                                  borderRadius: BorderRadius.circular(26),
                                   child: Align(
                                     alignment: Alignment.topCenter,
                                     child: Container(
-                                      height: 12,
+                                      height: 14,
                                       decoration: BoxDecoration(
                                         gradient: LinearGradient(
                                           begin: Alignment.topCenter,
                                           end: Alignment.bottomCenter,
                                           colors: [
-                                            Colors.white.withOpacity(widget.isDark ? 0.15 : 0.4),
+                                            Colors.white.withOpacity(widget.isDark ? 0.18 : 0.45),
                                             Colors.white.withOpacity(0),
                                           ],
                                         ),
