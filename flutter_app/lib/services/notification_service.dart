@@ -74,19 +74,11 @@ class NotificationService {
       title,
       body,
       _nextInstanceOfTime(hour, minute),
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'daily_reminder',
-          '每日提醒',
-          channelDescription: '每日定时提醒通知',
-          importance: Importance.high,
-          priority: Priority.high,
-        ),
-        iOS: DarwinNotificationDetails(
-          presentAlert: true,
-          presentBadge: true,
-          presentSound: true,
-        ),
+      _getNotificationDetails(
+        'daily_reminder',
+        '每日提醒',
+        '每日定时提醒通知',
+        sound: 'task_alert', // 默认使用任务提醒音效
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
@@ -200,12 +192,20 @@ class NotificationService {
       final displayName = userName?.isNotEmpty == true ? userName! : '小伙伴';
       final message = messages[i % messages.length];
       
-      await scheduleDailyNotification(
-        id: id + i,
-        hour: time['hour']!,
-        minute: time['minute']!,
-        title: '哈喽 $displayName 👋',
-        body: message,
+      await _notifications.zonedSchedule(
+        id + i,
+        '哈喽 $displayName 👋',
+        message,
+        _nextInstanceOfTime(time['hour']!, time['minute']!),
+        _getNotificationDetails(
+          'water_reminder',
+          '喝水提醒',
+          '每日喝水定时提醒',
+          sound: 'water_alert', // 喝水专用音效
+        ),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time,
       );
     }
   }
@@ -240,12 +240,20 @@ class NotificationService {
       
       final message = messages[i % messages.length];
       
-      await scheduleDailyNotification(
-        id: id + i,
-        hour: hour,
-        minute: 0,
-        title: '哈喽 $displayName 📋',
-        body: message,
+      await _notifications.zonedSchedule(
+        id + i,
+        '哈喽 $displayName 📋',
+        message,
+        _nextInstanceOfTime(hour, 0),
+        _getNotificationDetails(
+          'plan_reminder',
+          '计划提醒',
+          '每日计划定时提醒',
+          sound: 'task_alert', // 任务专用音效
+        ),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time,
       );
     }
   }
@@ -291,6 +299,25 @@ class NotificationService {
           presentBadge: true,
           presentSound: true,
         ),
+      ),
+    );
+  }
+
+  NotificationDetails _getNotificationDetails(String channelId, String channelName, String description, {String? sound}) {
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        channelId,
+        channelName,
+        channelDescription: description,
+        importance: Importance.high,
+        priority: Priority.high,
+        sound: sound != null ? RawResourceAndroidNotificationSound(sound) : null,
+      ),
+      iOS: DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        sound: sound != null ? '$sound.aiff' : null,
       ),
     );
   }
