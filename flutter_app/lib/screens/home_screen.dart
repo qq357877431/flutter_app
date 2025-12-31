@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import '../config/colors.dart';
 import '../services/haptic_service.dart';
 import 'plan_screen.dart';
@@ -19,9 +20,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   int _currentIndex = 0;
   late PageController _pageController;
   
-  double _dragStartX = 0;
-  double _liquidPosition = 0;
+  // 玻璃指示器的动画位置（连续值，用于流畅过渡）
+  late AnimationController _indicatorController;
+  late Animation<double> _indicatorAnimation;
+  double _indicatorPosition = 0;
+  
   bool _isDragging = false;
+  double _dragStartX = 0;
 
   final List<_NavItemData> _navItems = [
     _NavItemData('计划', CupertinoIcons.calendar, CupertinoIcons.calendar_today),
@@ -34,35 +39,66 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _currentIndex);
-    _liquidPosition = _currentIndex.toDouble();
+    
+    // 指示器动画控制器
+    _indicatorController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    );
+    _indicatorAnimation = Tween<double>(begin: 0, end: 0).animate(
+      CurvedAnimation(parent: _indicatorController, curve: Curves.easeOutCubic),
+    );
   }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _indicatorController.dispose();
     super.dispose();
+  }
+
+  void _animateIndicatorTo(int index) {
+    final start = _indicatorPosition;
+    final end = index.toDouble();
+    
+    _indicatorAnimation = Tween<double>(begin: start, end: end).animate(
+      CurvedAnimation(parent: _indicatorController, curve: Curves.easeOutCubic),
+    );
+    
+    _indicatorController.reset();
+    _indicatorController.forward();
+    
+    _indicatorAnimation.addListener(() {
+      setState(() {
+        _indicatorPosition = _indicatorAnimation.value;
+      });
+    });
   }
 
   void _onTabTapped(int index) {
     if (_currentIndex != index) {
-      HapticService.lightImpact(); // 切换菜单时触觉反馈
+      HapticService.lightImpact();
+      _animateIndicatorTo(index);
+      
       setState(() {
         _currentIndex = index;
-        _liquidPosition = index.toDouble();
       });
+      
       _pageController.animateToPage(
         index,
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 350),
         curve: Curves.easeOutCubic,
       );
     }
   }
 
   void _onPageChanged(int index) {
-    setState(() {
-      _currentIndex = index;
-      _liquidPosition = index.toDouble();
-    });
+    if (!_isDragging) {
+      _animateIndicatorTo(index);
+      setState(() {
+        _currentIndex = index;
+      });
+    }
   }
 
   void _onHorizontalDragStart(DragStartDetails details) {
@@ -75,23 +111,37 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     
     final itemWidth = navWidth / 4;
     final dx = details.localPosition.dx - _dragStartX;
+    
+    // 拖动时实时更新指示器位置
     final newPosition = (_currentIndex + dx / itemWidth).clamp(0.0, 3.0);
     
     setState(() {
-      _liquidPosition = newPosition;
+      _indicatorPosition = newPosition;
     });
   }
 
   void _onHorizontalDragEnd(DragEndDetails details) {
     _isDragging = false;
-    final targetIndex = _liquidPosition.round().clamp(0, 3);
+    
+    // 根据指示器位置确定目标索引（超过50%就跳到下一个）
+    final targetIndex = _indicatorPosition.round().clamp(0, 3);
     
     if (targetIndex != _currentIndex) {
-      _onTabTapped(targetIndex);
-    } else {
+      HapticService.lightImpact();
+      _animateIndicatorTo(targetIndex);
+      
       setState(() {
-        _liquidPosition = _currentIndex.toDouble();
+        _currentIndex = targetIndex;
       });
+      
+      _pageController.animateToPage(
+        targetIndex,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOutCubic,
+      );
+    } else {
+      // 回弹到当前位置
+      _animateIndicatorTo(_currentIndex);
     }
   }
 
@@ -104,6 +154,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     
     return Scaffold(
       backgroundColor: colors.scaffoldBg,
+      extendBody: true,
       body: Stack(
         children: [
           // 页面内容
@@ -118,14 +169,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               SettingsScreen(),
             ],
           ),
-          // 浮动导航栏
+          // iOS 26 风格的 Liquid Glass 导航栏
           Positioned(
-            left: 20,
-            right: 20,
-            bottom: bottomPadding + 16,
-            child: _LiquidGlassNavBar(
+            left: 16,
+            right: 16,
+            bottom: bottomPadding + 12,
+            child: _iOS26LiquidGlassNavBar(
               currentIndex: _currentIndex,
-              liquidPosition: _liquidPosition,
+              indicatorPosition: _indicatorPosition,
               navItems: _navItems,
               tabColors: tabColors,
               colors: colors,
@@ -150,9 +201,10 @@ class _NavItemData {
   _NavItemData(this.label, this.icon, this.activeIcon);
 }
 
-class _LiquidGlassNavBar extends StatelessWidget {
+/// iOS 26 风格的 Liquid Glass 导航栏
+class _iOS26LiquidGlassNavBar extends StatefulWidget {
   final int currentIndex;
-  final double liquidPosition;
+  final double indicatorPosition;  // 连续动画值
   final List<_NavItemData> navItems;
   final List<Color> tabColors;
   final AppColors colors;
@@ -162,9 +214,9 @@ class _LiquidGlassNavBar extends StatelessWidget {
   final Function(DragUpdateDetails, double) onHorizontalDragUpdate;
   final Function(DragEndDetails) onHorizontalDragEnd;
 
-  const _LiquidGlassNavBar({
+  const _iOS26LiquidGlassNavBar({
     required this.currentIndex,
-    required this.liquidPosition,
+    required this.indicatorPosition,
     required this.navItems,
     required this.tabColors,
     required this.colors,
@@ -176,201 +228,207 @@ class _LiquidGlassNavBar extends StatelessWidget {
   });
 
   @override
+  State<_iOS26LiquidGlassNavBar> createState() => _iOS26LiquidGlassNavBarState();
+}
+
+class _iOS26LiquidGlassNavBarState extends State<_iOS26LiquidGlassNavBar> {
+  // 当前按下的索引
+  int? _pressedIndex;
+  // 整个导航栏是否被按下
+  bool _isNavBarPressed = false;
+  
+  // 根据指示器位置计算当前应该高亮的索引
+  int get _highlightedIndex => widget.indicatorPosition.round().clamp(0, 3);
+  
+  @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(28),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 1.5, sigmaY: 1.5),
-        child: Container(
-          height: 70,
-          decoration: BoxDecoration(
-            // 毛玻璃效果：最大透明度
-            color: isDark 
-                ? Colors.black.withOpacity(0.05)
-                : Colors.white.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-              color: isDark 
-                  ? Colors.white.withOpacity(0.2)
-                  : Colors.white.withOpacity(0.6),
-              width: 0.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-                spreadRadius: 0,
-              ),
-            ],
-          ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final navWidth = constraints.maxWidth;
-              final itemWidth = navWidth / 4;
-              
-              return GestureDetector(
-                onHorizontalDragStart: onHorizontalDragStart,
-                onHorizontalDragUpdate: (details) => onHorizontalDragUpdate(details, navWidth),
-                onHorizontalDragEnd: onHorizontalDragEnd,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // 液态玻璃指示器 - 包裹整个菜单项
-                    AnimatedPositioned(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeOutCubic,
-                      left: liquidPosition * itemWidth + 6,
-                      top: 6,
-                      bottom: 6,
-                      child: _LiquidIndicator(
-                        width: itemWidth - 12,
-                        color: tabColors[liquidPosition.round().clamp(0, 3)],
-                        isDark: isDark,
-                      ),
-                    ),
-                    // 导航项
-                    Row(
-                      children: List.generate(4, (index) {
-                        final isSelected = currentIndex == index;
-                        final item = navItems[index];
-                        final color = tabColors[index];
-                        
-                        return Expanded(
-                          child: GestureDetector(
-                            onTap: () => onTabTapped(index),
-                            behavior: HitTestBehavior.opaque,
-                            child: _NavItem(
-                              icon: item.icon,
-                              activeIcon: item.activeIcon,
-                              label: item.label,
-                              isSelected: isSelected,
-                              color: color,
-                              colors: colors,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final navWidth = constraints.maxWidth;
+        final itemWidth = navWidth / 4;
+        
+        // 整个导航栏按下时放大
+        final navBarScale = _isNavBarPressed ? 1.02 : 1.0;
+        
+        return GestureDetector(
+          onHorizontalDragStart: widget.onHorizontalDragStart,
+          onHorizontalDragUpdate: (details) => widget.onHorizontalDragUpdate(details, navWidth),
+          onHorizontalDragEnd: widget.onHorizontalDragEnd,
+          child: AnimatedScale(
+            scale: navBarScale,
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeOutCubic,
+            child: SizedBox(
+              height: 72,
+              child: LiquidGlassLayer(
+                settings: LiquidGlassSettings(
+                  thickness: widget.isDark ? 10 : 12,
+                  blur: widget.isDark ? 5 : 6,
+                  glassColor: widget.isDark 
+                      ? const Color(0x28000000)
+                      : const Color(0x22FFFFFF),
+                  lightAngle: -0.7,
+                  lightIntensity: widget.isDark ? 0.35 : 0.5,
+                ),
+                child: LiquidGlassBlendGroup(
+                  blend: 12.0,  // 融合程度，让指示器和背景像液体一样融合
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      // 导航栏背景玻璃
+                      Positioned.fill(
+                        child: LiquidGlass.grouped(
+                          shape: LiquidRoundedSuperellipse(borderRadius: 24),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: widget.isDark 
+                                  ? Colors.black.withOpacity(0.3)
+                                  : Colors.white.withOpacity(0.4),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: widget.isDark 
+                                    ? Colors.white.withOpacity(0.2)
+                                    : Colors.white.withOpacity(0.55),
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(widget.isDark ? 0.4 : 0.12),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
                             ),
                           ),
-                        );
-                      }),
-                    ),
-                  ],
+                        ),
+                      ),
+                      // 液态滑动指示器（像水滴一样滑动）
+                      Positioned(
+                        left: widget.indicatorPosition * itemWidth + 6,
+                        top: 6,
+                        bottom: 6,
+                        child: LiquidStretch(
+                          stretch: _isNavBarPressed ? 0.6 : 0.3,  // 按下时更多拉伸
+                          interactionScale: _isNavBarPressed ? 1.08 : 1.0,  // 按下时向外扩散
+                          child: SizedBox(
+                            width: itemWidth - 12,
+                            child: LiquidGlass.grouped(
+                              shape: LiquidRoundedSuperellipse(borderRadius: 18),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      widget.tabColors[_highlightedIndex].withOpacity(widget.isDark ? 0.4 : 0.3),
+                                      widget.tabColors[_highlightedIndex].withOpacity(widget.isDark ? 0.2 : 0.15),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(
+                                    color: widget.tabColors[_highlightedIndex].withOpacity(widget.isDark ? 0.5 : 0.4),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                // 顶部高光
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(18),
+                                  child: Align(
+                                    alignment: Alignment.topCenter,
+                                    child: Container(
+                                      height: 12,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            Colors.white.withOpacity(widget.isDark ? 0.15 : 0.4),
+                                            Colors.white.withOpacity(0),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // 导航项
+                      Positioned.fill(
+                        child: Row(
+                          children: List.generate(4, (index) {
+                            // 判断是否高亮
+                            final isHighlighted = _highlightedIndex == index;
+                            final item = widget.navItems[index];
+                            final color = widget.tabColors[index];
+                            
+                            return Expanded(
+                              child: GestureDetector(
+                                onTapDown: (_) {
+                                  HapticService.selectionClick();
+                                  setState(() {
+                                    _pressedIndex = index;
+                                    _isNavBarPressed = true;
+                                  });
+                                },
+                                onTapUp: (_) {
+                                  setState(() {
+                                    _pressedIndex = null;
+                                    _isNavBarPressed = false;
+                                  });
+                                  widget.onTabTapped(index);
+                                },
+                                onTapCancel: () {
+                                  setState(() {
+                                    _pressedIndex = null;
+                                    _isNavBarPressed = false;
+                                  });
+                                },
+                                behavior: HitTestBehavior.opaque,
+                                child: SizedBox(
+                                  height: 72,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      // 图标
+                                      AnimatedSwitcher(
+                                        duration: const Duration(milliseconds: 200),
+                                        child: Icon(
+                                          isHighlighted ? item.activeIcon : item.icon,
+                                          key: ValueKey(isHighlighted),
+                                          color: isHighlighted ? color : widget.colors.textTertiary,
+                                          size: isHighlighted ? 24 : 22,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      // 标签
+                                      AnimatedDefaultTextStyle(
+                                        duration: const Duration(milliseconds: 200),
+                                        style: TextStyle(
+                                          fontSize: isHighlighted ? 10 : 9,
+                                          color: isHighlighted ? color : widget.colors.textTertiary,
+                                          fontWeight: isHighlighted ? FontWeight.w600 : FontWeight.normal,
+                                        ),
+                                        child: Text(item.label),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _LiquidIndicator extends StatelessWidget {
-  final double width;
-  final Color color;
-  final bool isDark;
-
-  const _LiquidIndicator({
-    required this.width,
-    required this.color,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            color.withOpacity(isDark ? 0.35 : 0.25),
-            color.withOpacity(isDark ? 0.2 : 0.15),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: color.withOpacity(isDark ? 0.5 : 0.4),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.4),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.white.withOpacity(isDark ? 0.15 : 0.5),
-                  Colors.white.withOpacity(isDark ? 0.05 : 0.15),
-                ],
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final IconData activeIcon;
-  final String label;
-  final bool isSelected;
-  final Color color;
-  final AppColors colors;
-
-  const _NavItem({
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
-    required this.isSelected,
-    required this.color,
-    required this.colors,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          transitionBuilder: (child, animation) {
-            return ScaleTransition(
-              scale: animation,
-              child: child,
-            );
-          },
-          child: Icon(
-            isSelected ? activeIcon : icon,
-            key: ValueKey(isSelected),
-            color: isSelected ? color : colors.textTertiary,
-            size: isSelected ? 26 : 22,
-          ),
-        ),
-        const SizedBox(height: 4),
-        AnimatedDefaultTextStyle(
-          duration: const Duration(milliseconds: 200),
-          style: TextStyle(
-            fontSize: isSelected ? 11 : 10,
-            color: isSelected ? color : colors.textTertiary,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-          ),
-          child: Text(label),
-        ),
-      ],
+        );
+      },
     );
   }
 }
