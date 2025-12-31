@@ -833,6 +833,7 @@ class _WaterScreenState extends ConsumerState<WaterScreen> with SingleTickerProv
       ),
       child: LiquidCard(
         isDark: isDark,
+        borderColor: colors.glassBorder,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [

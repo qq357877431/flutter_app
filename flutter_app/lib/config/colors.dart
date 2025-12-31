@@ -85,7 +85,7 @@ class AppColors {
       
   Color get glassBorder => isDark 
       ? Colors.white.withOpacity(0.1) 
-      : Colors.white.withOpacity(0.4);
+      : Colors.black.withOpacity(0.08);
   
   // 渐变色 - 深色模式下颜色变暗
   List<Color> get primaryGradient => isDark 

@@ -7,6 +7,7 @@ import '../models/expense.dart';
 import '../providers/expense_provider.dart';
 import '../services/haptic_service.dart';
 import '../widgets/liquid/fluid_background.dart';
+import '../widgets/liquid/liquid_card.dart';
 import '../widgets/liquid/liquid_header.dart';
 
 class ExpenseScreen extends ConsumerStatefulWidget {
@@ -246,7 +247,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                   placeholder: '添加备注...',
                   placeholderStyle: TextStyle(color: colors.textTertiary),
                   padding: const EdgeInsets.all(14),
-                  style: TextStyle(color: colors.textPrimary),
+                  style: TextStyle(color: colors.textPrimary, fontSize: 15),
                   decoration: BoxDecoration(color: colors.cardBgSecondary, borderRadius: BorderRadius.circular(12)),
                 ),
               ),
@@ -536,19 +537,10 @@ class _ExpenseTile extends StatelessWidget {
         child: const Icon(CupertinoIcons.delete, color: Colors.white),
       ),
       onDismissed: (_) => onDelete(),
-      child: Container(
+      child: LiquidCard(
+        isDark: isDark,
+        borderColor: colors.glassBorder,
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: colors.cardBg,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
         child: Row(
           children: [
             Container(
@@ -603,7 +595,7 @@ class _ExpenseTile extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
-                    color: colors.textPrimary,
+                    color: colors.red,
                   ),
                 ),
                 const SizedBox(height: 4),
