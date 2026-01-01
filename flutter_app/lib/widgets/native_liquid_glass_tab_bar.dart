@@ -3,9 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// iOS 26 Native Liquid Glass Tab Bar
-/// Uses native SwiftUI TabView with glassEffect on iOS 26+
-/// Falls back to Flutter implementation on other platforms
+/// iOS 26 Native Liquid Glass Tab Bar using overlay window
+/// Uses native UIWindow overlay for TRUE transparency
 class NativeLiquidGlassTabBar extends StatefulWidget {
   final int currentIndex;
   final ValueChanged<int> onTabChanged;
@@ -23,24 +22,24 @@ class NativeLiquidGlassTabBar extends StatefulWidget {
 }
 
 class _NativeLiquidGlassTabBarState extends State<NativeLiquidGlassTabBar> {
-  MethodChannel? _channel;
-  int _viewId = 0;
+  static const _overlayChannel = MethodChannel('liquid_glass_overlay');
+  bool _isOverlayShown = false;
 
   @override
-  void didUpdateWidget(NativeLiquidGlassTabBar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    
-    // Sync tab index from Flutter to native
-    if (oldWidget.currentIndex != widget.currentIndex && _channel != null) {
-      _channel!.invokeMethod('setTab', {'index': widget.currentIndex});
-    }
+  void initState() {
+    super.initState();
+    _setupMethodChannel();
+    _showOverlay();
   }
 
-  void _onPlatformViewCreated(int viewId) {
-    _viewId = viewId;
-    _channel = MethodChannel('liquid_glass_tab_bar_$viewId');
-    
-    _channel!.setMethodCallHandler((call) async {
+  @override
+  void dispose() {
+    _hideOverlay();
+    super.dispose();
+  }
+
+  void _setupMethodChannel() {
+    _overlayChannel.setMethodCallHandler((call) async {
       if (call.method == 'onTabChanged') {
         final args = call.arguments as Map<Object?, Object?>;
         final index = args['index'] as int;
@@ -49,26 +48,52 @@ class _NativeLiquidGlassTabBarState extends State<NativeLiquidGlassTabBar> {
     });
   }
 
+  Future<void> _showOverlay() async {
+    if (!Platform.isIOS) return;
+    
+    try {
+      await _overlayChannel.invokeMethod('show', {
+        'initialTab': widget.currentIndex,
+      });
+      _isOverlayShown = true;
+    } catch (e) {
+      debugPrint('Failed to show overlay: $e');
+    }
+  }
+
+  Future<void> _hideOverlay() async {
+    if (!Platform.isIOS || !_isOverlayShown) return;
+    
+    try {
+      await _overlayChannel.invokeMethod('hide');
+      _isOverlayShown = false;
+    } catch (e) {
+      debugPrint('Failed to hide overlay: $e');
+    }
+  }
+
+  @override
+  void didUpdateWidget(NativeLiquidGlassTabBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // Sync tab index from Flutter to native
+    if (oldWidget.currentIndex != widget.currentIndex && _isOverlayShown) {
+      _overlayChannel.invokeMethod('setTab', {'index': widget.currentIndex});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Only use native view on iOS
-    if (!Platform.isIOS) {
-      return _FallbackTabBar(
-        currentIndex: widget.currentIndex,
-        onTabChanged: widget.onTabChanged,
-      );
+    // Return empty container - actual tab bar is in native overlay window
+    // This widget just handles communication
+    if (Platform.isIOS) {
+      return SizedBox(height: widget.height);
     }
-
-    return SizedBox(
-      height: widget.height,
-      child: UiKitView(
-        viewType: 'liquid_glass_tab_bar',
-        creationParams: {
-          'initialTab': widget.currentIndex,
-        },
-        creationParamsCodec: const StandardMessageCodec(),
-        onPlatformViewCreated: _onPlatformViewCreated,
-      ),
+    
+    // Fallback for non-iOS
+    return _FallbackTabBar(
+      currentIndex: widget.currentIndex,
+      onTabChanged: widget.onTabChanged,
     );
   }
 }

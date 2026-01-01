@@ -3,220 +3,287 @@
 //  Runner
 //
 //  iOS 26 Native Liquid Glass Tab Bar for Flutter Integration
-//  Uses native SwiftUI TabView with glassEffect - NO BACKGROUND
+//  Uses native UIWindow overlay for TRUE transparency (no PlatformView background)
 //
 
 import SwiftUI
 import Flutter
 
-// MARK: - Tab Configuration
-
-struct TabConfig {
-    let index: Int
-    let label: String
-    let icon: String
-    let activeIcon: String
-}
-
-// MARK: - Native Liquid Glass Tab Bar
+// MARK: - Overlay Window Manager
 
 @available(iOS 26.0, *)
-struct NativeLiquidGlassTabBar: View {
-    @Binding var selectedTab: Int
-    let onTabChanged: (Int) -> Void
+class LiquidGlassOverlayManager {
+    static let shared = LiquidGlassOverlayManager()
     
-    let tabs: [TabConfig] = [
-        TabConfig(index: 0, label: "计划", icon: "calendar", activeIcon: "calendar"),
-        TabConfig(index: 1, label: "记账", icon: "dollarsign.circle", activeIcon: "dollarsign.circle.fill"),
-        TabConfig(index: 2, label: "喝水", icon: "drop", activeIcon: "drop.fill"),
-        TabConfig(index: 3, label: "设置", icon: "gearshape", activeIcon: "gearshape.fill")
-    ]
+    private var overlayWindow: UIWindow?
+    private var hostingController: UIHostingController<AnyView>?
+    private var currentTab: Int = 0
+    private var tabChangeCallback: ((Int) -> Void)?
     
-    var body: some View {
-        TabView(selection: $selectedTab) {
-            // 每个 Tab 内容为完全透明
-            ForEach(tabs, id: \.index) { tab in
-                Tab(tab.label, systemImage: tab.icon, value: tab.index) {
-                    Color.clear
-                        .ignoresSafeArea()
+    private init() {}
+    
+    func showTabBar(in windowScene: UIWindowScene, initialTab: Int, onTabChanged: @escaping (Int) -> Void) {
+        // Remove existing overlay if any
+        hideTabBar()
+        
+        currentTab = initialTab
+        tabChangeCallback = onTabChanged
+        
+        // Create overlay window
+        let window = UIWindow(windowScene: windowScene)
+        window.windowLevel = .normal + 1  // Above main content
+        window.backgroundColor = .clear
+        window.isOpaque = false
+        window.isUserInteractionEnabled = true
+        
+        // Create SwiftUI tab bar
+        let tabBinding = Binding<Int>(
+            get: { self.currentTab },
+            set: { newValue in
+                if self.currentTab != newValue {
+                    self.currentTab = newValue
+                    self.tabChangeCallback?(newValue)
                 }
             }
-        }
-        // iOS 26 Liquid Glass 效果 - 关键：移除所有背景
-        .tabViewStyle(.sidebarAdaptable)
-        .tint(.primary)
-        // 确保 Tab Bar 背景完全透明
-        .toolbarBackground(.hidden, for: .tabBar)
-        .toolbarBackgroundVisibility(.hidden, for: .tabBar)
-        .background(Color.clear)
-        .onChange(of: selectedTab) { oldValue, newValue in
-            if oldValue != newValue {
-                // Haptic feedback
-                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                impactFeedback.impactOccurred()
-                onTabChanged(newValue)
-            }
-        }
-    }
-}
-
-// MARK: - UIKit Wrapper for SwiftUI
-
-@available(iOS 26.0, *)
-class LiquidGlassTabBarController: UIViewController {
-    private var selectedTab: Int = 0
-    private var onTabChanged: ((Int) -> Void)?
-    private var hostingController: UIHostingController<AnyView>?
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        view.backgroundColor = .clear
-        view.isOpaque = false
-    }
-    
-    func configure(initialTab: Int, onTabChanged: @escaping (Int) -> Void) {
-        self.selectedTab = initialTab
-        self.onTabChanged = onTabChanged
-        setupSwiftUIView()
-    }
-    
-    func updateSelectedTab(_ tab: Int) {
-        self.selectedTab = tab
-        setupSwiftUIView()
-    }
-    
-    private func setupSwiftUIView() {
-        // Remove existing hosting controller
-        hostingController?.view.removeFromSuperview()
-        hostingController?.removeFromParent()
-        
-        // Create new SwiftUI view with binding
-        let tabBinding = Binding<Int>(
-            get: { self.selectedTab },
-            set: { newValue in
-                self.selectedTab = newValue
-                self.onTabChanged?(newValue)
-            }
         )
         
-        let swiftUIView = NativeLiquidGlassTabBar(
-            selectedTab: tabBinding,
-            onTabChanged: { [weak self] index in
-                self?.onTabChanged?(index)
-            }
+        let tabBarView = FloatingLiquidGlassTabBar(
+            selectedTab: tabBinding
         )
-        // 包装并设置透明背景
-        .background(Color.clear)
-        .ignoresSafeArea()
         
-        let hosting = UIHostingController(rootView: AnyView(swiftUIView))
+        let hosting = UIHostingController(rootView: AnyView(tabBarView))
         hosting.view.backgroundColor = .clear
         hosting.view.isOpaque = false
-        hosting.view.translatesAutoresizingMaskIntoConstraints = false
         
-        // 确保 hosting controller 本身也是透明的
-        hosting.safeAreaRegions = []
+        window.rootViewController = hosting
+        window.isHidden = false
+        window.makeKeyAndVisible()
         
-        addChild(hosting)
-        view.addSubview(hosting.view)
-        
-        NSLayoutConstraint.activate([
-            hosting.view.topAnchor.constraint(equalTo: view.topAnchor),
-            hosting.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            hosting.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            hosting.view.trailingAnchor.constraint(equalTo: view.trailingAnchor)
-        ])
-        
-        hosting.didMove(toParent: self)
+        overlayWindow = window
         hostingController = hosting
+    }
+    
+    func updateTab(_ index: Int) {
+        currentTab = index
+        refreshView()
+    }
+    
+    func hideTabBar() {
+        overlayWindow?.isHidden = true
+        overlayWindow = nil
+        hostingController = nil
+    }
+    
+    private func refreshView() {
+        guard let hosting = hostingController else { return }
+        
+        let tabBinding = Binding<Int>(
+            get: { self.currentTab },
+            set: { newValue in
+                if self.currentTab != newValue {
+                    self.currentTab = newValue
+                    self.tabChangeCallback?(newValue)
+                }
+            }
+        )
+        
+        let tabBarView = FloatingLiquidGlassTabBar(selectedTab: tabBinding)
+        hosting.rootView = AnyView(tabBarView)
     }
 }
 
-// MARK: - Flutter Platform View
+// MARK: - Floating Liquid Glass Tab Bar (positioned at bottom)
 
-class LiquidGlassTabBarPlatformView: NSObject, FlutterPlatformView {
-    private let frame: CGRect
-    private let viewId: Int64
-    private let channel: FlutterMethodChannel
-    private var containerView: UIView
+@available(iOS 26.0, *)
+struct FloatingLiquidGlassTabBar: View {
+    @Binding var selectedTab: Int
     
-    init(frame: CGRect, viewId: Int64, args: Any?, messenger: FlutterBinaryMessenger) {
-        self.frame = frame
-        self.viewId = viewId
-        self.containerView = UIView(frame: frame)
-        // 确保容器透明
-        self.containerView.backgroundColor = .clear
-        self.containerView.isOpaque = false
-        self.channel = FlutterMethodChannel(
-            name: "liquid_glass_tab_bar_\(viewId)",
-            binaryMessenger: messenger
-        )
-        
-        super.init()
-        
-        setupView(args: args)
-        setupMethodChannel()
+    var body: some View {
+        GeometryReader { geometry in
+            VStack {
+                Spacer()
+                
+                // Tab bar container - NO background, pure glass
+                HStack(spacing: 0) {
+                    ForEach(0..<4) { index in
+                        TabBarItem(
+                            index: index,
+                            isSelected: selectedTab == index,
+                            onTap: {
+                                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                                impactFeedback.impactOccurred()
+                                selectedTab = index
+                            }
+                        )
+                    }
+                }
+                .frame(height: 72)
+                .frame(maxWidth: .infinity)
+                .background(.ultraThinMaterial)
+                .clipShape(Capsule())
+                .shadow(color: .black.opacity(0.1), radius: 20, y: 5)
+                .padding(.horizontal, 20)
+                .padding(.bottom, geometry.safeAreaInsets.bottom + 12)
+            }
+            .ignoresSafeArea()
+        }
+    }
+}
+
+@available(iOS 26.0, *)
+struct TabBarItem: View {
+    let index: Int
+    let isSelected: Bool
+    let onTap: () -> Void
+    
+    private var icon: String {
+        switch index {
+        case 0: return isSelected ? "calendar" : "calendar"
+        case 1: return isSelected ? "dollarsign.circle.fill" : "dollarsign.circle"
+        case 2: return isSelected ? "drop.fill" : "drop"
+        case 3: return isSelected ? "gearshape.fill" : "gearshape"
+        default: return "circle"
+        }
     }
     
-    func view() -> UIView {
-        return containerView
+    private var label: String {
+        switch index {
+        case 0: return "计划"
+        case 1: return "记账"
+        case 2: return "喝水"
+        case 3: return "设置"
+        default: return ""
+        }
     }
     
-    private func setupView(args: Any?) {
+    private var color: Color {
+        switch index {
+        case 0: return Color(hex: "667eea")
+        case 1: return Color(hex: "10B981")
+        case 2: return Color(hex: "3B82F6")
+        case 3: return Color(hex: "F59E0B")
+        default: return .gray
+        }
+    }
+    
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: isSelected ? 22 : 20, weight: isSelected ? .semibold : .regular))
+                    .foregroundStyle(isSelected ? color : .secondary)
+                    .scaleEffect(isSelected ? 1.1 : 1.0)
+                    .animation(.spring(response: 0.3), value: isSelected)
+                
+                Text(label)
+                    .font(.system(size: 10, weight: isSelected ? .semibold : .regular))
+                    .foregroundStyle(isSelected ? color : .secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .background(
+                isSelected ? color.opacity(0.1) : Color.clear
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .padding(.horizontal, 4)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Flutter Method Channel Handler
+
+class LiquidGlassTabBarChannel: NSObject {
+    static let shared = LiquidGlassTabBarChannel()
+    private var channel: FlutterMethodChannel?
+    
+    func setup(messenger: FlutterBinaryMessenger) {
+        channel = FlutterMethodChannel(name: "liquid_glass_overlay", binaryMessenger: messenger)
+        
+        channel?.setMethodCallHandler { [weak self] call, result in
+            self?.handleMethodCall(call, result: result)
+        }
+    }
+    
+    private func handleMethodCall(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         guard #available(iOS 26.0, *) else {
-            // Fallback for older iOS versions - 透明背景 + 简单文字
-            containerView.backgroundColor = .clear
-            let label = UILabel(frame: containerView.bounds)
-            label.text = "Requires iOS 26+"
-            label.textAlignment = .center
-            label.textColor = .systemGray
-            containerView.addSubview(label)
+            result(FlutterMethodNotImplemented)
             return
         }
         
-        let initialTab = (args as? [String: Any])?["initialTab"] as? Int ?? 0
-        
-        let tabBarController = LiquidGlassTabBarController()
-        tabBarController.view.backgroundColor = .clear
-        tabBarController.view.isOpaque = false
-        
-        tabBarController.configure(initialTab: initialTab) { [weak self] index in
-            self?.channel.invokeMethod("onTabChanged", arguments: ["index": index])
-        }
-        
-        tabBarController.view.frame = containerView.bounds
-        tabBarController.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        containerView.addSubview(tabBarController.view)
-        
-        // Keep reference to prevent deallocation
-        objc_setAssociatedObject(containerView, "tabBarController", tabBarController, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-    }
-    
-    private func setupMethodChannel() {
-        channel.setMethodCallHandler { [weak self] call, result in
-            guard #available(iOS 26.0, *) else {
-                result(FlutterMethodNotImplemented)
-                return
+        switch call.method {
+        case "show":
+            if let args = call.arguments as? [String: Any],
+               let initialTab = args["initialTab"] as? Int {
+                showTabBar(initialTab: initialTab)
+                result(nil)
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Missing initialTab", details: nil))
             }
             
-            switch call.method {
-            case "setTab":
-                if let args = call.arguments as? [String: Any],
-                   let index = args["index"] as? Int,
-                   let controller = objc_getAssociatedObject(self?.containerView as Any, "tabBarController") as? LiquidGlassTabBarController {
-                    controller.updateSelectedTab(index)
-                    result(nil)
-                } else {
-                    result(FlutterError(code: "INVALID_ARGS", message: "Invalid arguments", details: nil))
-                }
-            default:
-                result(FlutterMethodNotImplemented)
+        case "hide":
+            LiquidGlassOverlayManager.shared.hideTabBar()
+            result(nil)
+            
+        case "setTab":
+            if let args = call.arguments as? [String: Any],
+               let index = args["index"] as? Int {
+                LiquidGlassOverlayManager.shared.updateTab(index)
+                result(nil)
+            } else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Missing index", details: nil))
             }
+            
+        default:
+            result(FlutterMethodNotImplemented)
+        }
+    }
+    
+    @available(iOS 26.0, *)
+    private func showTabBar(initialTab: Int) {
+        guard let windowScene = UIApplication.shared.connectedScenes
+            .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene else {
+            return
+        }
+        
+        LiquidGlassOverlayManager.shared.showTabBar(
+            in: windowScene,
+            initialTab: initialTab
+        ) { [weak self] index in
+            self?.channel?.invokeMethod("onTabChanged", arguments: ["index": index])
         }
     }
 }
 
-// MARK: - Platform View Factory
+// MARK: - Color Extension
+
+extension Color {
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 3: // RGB (12-bit)
+            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6: // RGB (24-bit)
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8: // ARGB (32-bit)
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            (a, r, g, b) = (1, 1, 1, 0)
+        }
+        self.init(
+            .sRGB,
+            red: Double(r) / 255,
+            green: Double(g) / 255,
+            blue: Double(b) / 255,
+            opacity: Double(a) / 255
+        )
+    }
+}
+
+// MARK: - Legacy Platform View Factory (kept for compatibility)
 
 class LiquidGlassTabBarFactory: NSObject, FlutterPlatformViewFactory {
     private let messenger: FlutterBinaryMessenger
@@ -237,5 +304,21 @@ class LiquidGlassTabBarFactory: NSObject, FlutterPlatformViewFactory {
     
     func createArgsCodec() -> FlutterMessageCodec & NSObjectProtocol {
         return FlutterStandardMessageCodec.sharedInstance()
+    }
+}
+
+class LiquidGlassTabBarPlatformView: NSObject, FlutterPlatformView {
+    private var containerView: UIView
+    
+    init(frame: CGRect, viewId: Int64, args: Any?, messenger: FlutterBinaryMessenger) {
+        // Empty transparent view - real tab bar is in overlay window
+        self.containerView = UIView(frame: frame)
+        self.containerView.backgroundColor = .clear
+        self.containerView.isOpaque = false
+        super.init()
+    }
+    
+    func view() -> UIView {
+        return containerView
     }
 }

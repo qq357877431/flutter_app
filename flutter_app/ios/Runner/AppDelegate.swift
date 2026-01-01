@@ -12,10 +12,13 @@ import UserNotifications
   ) -> Bool {
     GeneratedPluginRegistrant.register(with: self)
     
-    // Register Liquid Glass Tab Bar Platform View
+    // Register Liquid Glass Tab Bar Platform View (legacy, for compatibility)
     let registrar = self.registrar(forPlugin: "LiquidGlassTabBar")!
     let factory = LiquidGlassTabBarFactory(messenger: registrar.messenger())
     registrar.register(factory, withId: "liquid_glass_tab_bar")
+    
+    // Setup overlay method channel for truly floating tab bar
+    LiquidGlassTabBarChannel.shared.setup(messenger: registrar.messenger())
     
     // 设置通知代理，允许前台显示通知
     UNUserNotificationCenter.current().delegate = self
