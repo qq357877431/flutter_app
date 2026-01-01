@@ -95,7 +95,7 @@ workflows:
       - name: Build Flutter for iOS
         script: |
           cd flutter_app
-          flutter build ios --release --no-codesign --config-only
+          flutter build ios --release --no-codesign --no-tree-shake-icons
       
       - name: Archive with xcodebuild
         script: |
