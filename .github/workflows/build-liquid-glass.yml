@@ -5,32 +5,62 @@ on:
     branches: [ main ]
     paths:
       - 'LiquidGlassDemo/**'
+      - '.github/workflows/build-liquid-glass.yml'
   pull_request:
     branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-15
     
     steps:
     - name: Checkout
       uses: actions/checkout@v4
     
-    - name: Select Xcode 15
-      run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+    - name: List Available Xcode Versions
+      run: ls -la /Applications | grep Xcode
     
-    - name: Show Xcode version
-      run: xcodebuild -version
-    
-    - name: List available destinations
+    - name: Select Latest Xcode
       run: |
-        xcodebuild -project LiquidGlassDemo/LiquidGlassDemo.xcodeproj -scheme LiquidGlassDemo -showdestinations | head -30
+        # Try Xcode 17 beta for iOS 26, fallback to Xcode 16
+        if [ -d "/Applications/Xcode_17.app" ]; then
+          sudo xcode-select -s /Applications/Xcode_17.app/Contents/Developer
+        elif [ -d "/Applications/Xcode_17_beta.app" ]; then
+          sudo xcode-select -s /Applications/Xcode_17_beta.app/Contents/Developer
+        elif [ -d "/Applications/Xcode_16.2.app" ]; then
+          sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+        elif [ -d "/Applications/Xcode_16.1.app" ]; then
+          sudo xcode-select -s /Applications/Xcode_16.1.app/Contents/Developer
+        elif [ -d "/Applications/Xcode_16.app" ]; then
+          sudo xcode-select -s /Applications/Xcode_16.app/Contents/Developer
+        else
+          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+        fi
+    
+    - name: Show Xcode and SDK Version
+      run: |
+        xcodebuild -version
+        xcodebuild -showsdks
     
     - name: Build for Generic iOS Device
       run: |
         cd LiquidGlassDemo
-        xcodebuild clean archive \
+        xcodebuild clean build \
+          -project LiquidGlassDemo.xcodeproj \
+          -scheme LiquidGlassDemo \
+          -destination 'generic/platform=iOS' \
+          -configuration Release \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO \
+          DEVELOPMENT_TEAM="" \
+          ENABLE_PREVIEWS=NO
+    
+    - name: Archive
+      run: |
+        cd LiquidGlassDemo
+        xcodebuild archive \
           -project LiquidGlassDemo.xcodeproj \
           -scheme LiquidGlassDemo \
           -destination 'generic/platform=iOS' \
@@ -40,15 +70,13 @@ jobs:
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGNING_ALLOWED=NO \
           DEVELOPMENT_TEAM="" \
-          ENABLE_PREVIEWS=NO \
           SKIP_INSTALL=NO
     
     - name: Export Unsigned IPA
       run: |
-        cd LiquidGlassDemo
-        mkdir -p build/Payload
-        cp -r build/LiquidGlassDemo.xcarchive/Products/Applications/LiquidGlassDemo.app build/Payload/
-        cd build
+        cd LiquidGlassDemo/build
+        mkdir -p Payload
+        cp -r LiquidGlassDemo.xcarchive/Products/Applications/LiquidGlassDemo.app Payload/
         zip -r LiquidGlassDemo-unsigned.ipa Payload
     
     - name: Upload IPA Artifact

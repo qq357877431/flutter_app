@@ -9,32 +9,14 @@
 /* Begin PBXBuildFile section */
 		A1000001230001 /* LiquidGlassDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001130001 /* LiquidGlassDemoApp.swift */; };
 		A1000001230002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001130002 /* ContentView.swift */; };
-		A1000001230003 /* LiquidTabBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001130003 /* LiquidTabBarView.swift */; };
-		A1000001230004 /* MetaballRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001130004 /* MetaballRenderer.swift */; };
-		A1000001230005 /* LiquidGlassShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = A1000001130005 /* LiquidGlassShaders.metal */; };
 		A1000001230006 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000001130006 /* Assets.xcassets */; };
-		A1000001230007 /* TouchInteractionModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001130007 /* TouchInteractionModifier.swift */; };
-		A1000001230008 /* TabItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001130008 /* TabItem.swift */; };
-		A1000001230009 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001130009 /* HomeView.swift */; };
-		A100000123000A /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000113000A /* SearchView.swift */; };
-		A100000123000B /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000113000B /* ProfileView.swift */; };
-		A100000123000C /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000113000C /* SettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		A1000001010001 /* LiquidGlassDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LiquidGlassDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1000001130001 /* LiquidGlassDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidGlassDemoApp.swift; sourceTree = "<group>"; };
 		A1000001130002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		A1000001130003 /* LiquidTabBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidTabBarView.swift; sourceTree = "<group>"; };
-		A1000001130004 /* MetaballRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetaballRenderer.swift; sourceTree = "<group>"; };
-		A1000001130005 /* LiquidGlassShaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = LiquidGlassShaders.metal; sourceTree = "<group>"; };
 		A1000001130006 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		A1000001130007 /* TouchInteractionModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchInteractionModifier.swift; sourceTree = "<group>"; };
-		A1000001130008 /* TabItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabItem.swift; sourceTree = "<group>"; };
-		A1000001130009 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
-		A100000113000A /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
-		A100000113000B /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
-		A100000113000C /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,9 +43,6 @@
 			children = (
 				A1000001130001 /* LiquidGlassDemoApp.swift */,
 				A1000001130002 /* ContentView.swift */,
-				A1000001410004 /* Components */,
-				A1000001410005 /* Views */,
-				A1000001410006 /* Shaders */,
 				A1000001130006 /* Assets.xcassets */,
 			);
 			path = LiquidGlassDemo;
@@ -75,36 +54,6 @@
 				A1000001010001 /* LiquidGlassDemo.app */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		A1000001410004 /* Components */ = {
-			isa = PBXGroup;
-			children = (
-				A1000001130003 /* LiquidTabBarView.swift */,
-				A1000001130004 /* MetaballRenderer.swift */,
-				A1000001130007 /* TouchInteractionModifier.swift */,
-				A1000001130008 /* TabItem.swift */,
-			);
-			path = Components;
-			sourceTree = "<group>";
-		};
-		A1000001410005 /* Views */ = {
-			isa = PBXGroup;
-			children = (
-				A1000001130009 /* HomeView.swift */,
-				A100000113000A /* SearchView.swift */,
-				A100000113000B /* ProfileView.swift */,
-				A100000113000C /* SettingsView.swift */,
-			);
-			path = Views;
-			sourceTree = "<group>";
-		};
-		A1000001410006 /* Shaders */ = {
-			isa = PBXGroup;
-			children = (
-				A1000001130005 /* LiquidGlassShaders.metal */,
-			);
-			path = Shaders;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -178,15 +127,6 @@
 			files = (
 				A1000001230001 /* LiquidGlassDemoApp.swift in Sources */,
 				A1000001230002 /* ContentView.swift in Sources */,
-				A1000001230003 /* LiquidTabBarView.swift in Sources */,
-				A1000001230004 /* MetaballRenderer.swift in Sources */,
-				A1000001230005 /* LiquidGlassShaders.metal in Sources */,
-				A1000001230007 /* TouchInteractionModifier.swift in Sources */,
-				A1000001230008 /* TabItem.swift in Sources */,
-				A1000001230009 /* HomeView.swift in Sources */,
-				A100000123000A /* SearchView.swift in Sources */,
-				A100000123000B /* ProfileView.swift in Sources */,
-				A100000123000C /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -245,7 +185,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -302,7 +242,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
