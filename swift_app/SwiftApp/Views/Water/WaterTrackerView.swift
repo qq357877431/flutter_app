@@ -39,7 +39,7 @@ struct WaterTrackerView: View {
                             .background(
                                 viewModel.reminderEnabled 
                                     ? Color.blue.opacity(0.15) 
-                                    : .regularMaterial
+                                    : Color(uiColor: .systemGray5)
                             )
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     }

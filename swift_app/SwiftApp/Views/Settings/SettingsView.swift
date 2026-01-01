@@ -201,7 +201,7 @@ struct EditProfileSheet: View {
                                 .background(
                                     selectedAvatar == emoji
                                         ? Color.blue.opacity(0.1)
-                                        : .regularMaterial
+                                        : Color(uiColor: .systemGray5)
                                 )
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                                 .overlay(
