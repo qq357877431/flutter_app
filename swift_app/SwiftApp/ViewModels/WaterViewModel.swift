@@ -2,6 +2,8 @@
 // Water tracking state management
 
 import SwiftUI
+import UIKit
+import UserNotifications
 
 @MainActor
 @Observable

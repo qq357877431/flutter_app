@@ -2,6 +2,7 @@
 // Plan list state management
 
 import SwiftUI
+import Foundation
 
 @MainActor
 @Observable

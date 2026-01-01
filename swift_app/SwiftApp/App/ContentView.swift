@@ -9,23 +9,31 @@ struct ContentView: View {
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            Tab("计划", systemImage: "calendar", value: 0) {
-                PlanListView()
-            }
+            PlanListView()
+                .tabItem {
+                    Label("计划", systemImage: "calendar")
+                }
+                .tag(0)
             
-            Tab("记账", systemImage: "dollarsign.circle", value: 1) {
-                ExpenseListView()
-            }
+            ExpenseListView()
+                .tabItem {
+                    Label("记账", systemImage: "dollarsign.circle")
+                }
+                .tag(1)
             
-            Tab("喝水", systemImage: "drop", value: 2) {
-                WaterTrackerView()
-            }
+            WaterTrackerView()
+                .tabItem {
+                    Label("喝水", systemImage: "drop")
+                }
+                .tag(2)
             
-            Tab("设置", systemImage: "gearshape", value: 3) {
-                SettingsView()
-            }
+            SettingsView()
+                .tabItem {
+                    Label("设置", systemImage: "gearshape")
+                }
+                .tag(3)
         }
-        .tint(.primary)
+        .tint(.blue)
     }
 }
 
