@@ -23,19 +23,11 @@ jobs:
     - name: Show Xcode version
       run: xcodebuild -version
     
-    - name: Build for iOS Simulator
+    - name: List available destinations
       run: |
-        cd LiquidGlassDemo
-        xcodebuild clean build \
-          -project LiquidGlassDemo.xcodeproj \
-          -scheme LiquidGlassDemo \
-          -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.0' \
-          -configuration Debug \
-          CODE_SIGN_IDENTITY="" \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO
+        xcodebuild -project LiquidGlassDemo/LiquidGlassDemo.xcodeproj -scheme LiquidGlassDemo -showdestinations | head -50
     
-    - name: Build IPA for Device (Unsigned)
+    - name: Build for Generic iOS Device
       run: |
         cd LiquidGlassDemo
         xcodebuild clean archive \
