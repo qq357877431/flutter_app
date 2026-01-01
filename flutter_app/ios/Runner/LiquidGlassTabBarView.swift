@@ -55,6 +55,8 @@ struct NativeLiquidGlassTabBar: View {
             }
         }
         .tint(.primary)
+        .toolbarBackground(.hidden, for: .tabBar)
+        .toolbarBackgroundVisibility(.hidden, for: .tabBar)
         .onChange(of: selectedTab) { oldValue, newValue in
             if oldValue != newValue {
                 // Haptic feedback
@@ -109,6 +111,7 @@ class LiquidGlassTabBarController: UIViewController {
         
         let hosting = UIHostingController(rootView: AnyView(swiftUIView))
         hosting.view.backgroundColor = .clear
+        hosting.view.isOpaque = false
         hosting.view.translatesAutoresizingMaskIntoConstraints = false
         
         addChild(hosting)
@@ -138,6 +141,8 @@ class LiquidGlassTabBarPlatformView: NSObject, FlutterPlatformView {
         self.frame = frame
         self.viewId = viewId
         self.containerView = UIView(frame: frame)
+        self.containerView.backgroundColor = .clear
+        self.containerView.isOpaque = false
         self.channel = FlutterMethodChannel(
             name: "liquid_glass_tab_bar_\(viewId)",
             binaryMessenger: messenger
@@ -171,6 +176,8 @@ class LiquidGlassTabBarPlatformView: NSObject, FlutterPlatformView {
         }
         
         tabBarController.view.frame = containerView.bounds
+        tabBarController.view.backgroundColor = .clear
+        tabBarController.view.isOpaque = false
         tabBarController.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         containerView.addSubview(tabBarController.view)
         
