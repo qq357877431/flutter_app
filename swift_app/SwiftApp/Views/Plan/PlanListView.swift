@@ -2,6 +2,7 @@
 // Plan management view with iOS 26 glass design
 
 import SwiftUI
+import UIKit
 
 struct PlanListView: View {
     @State private var viewModel = PlanViewModel()
@@ -29,7 +30,7 @@ struct PlanListView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 100)
             }
-            .background(Color(UIColor.systemGroupedBackground))
+            .background(Color(uiColor: .systemGroupedBackground))
             .navigationTitle("每日计划")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -128,18 +129,13 @@ struct PlanListView: View {
     // MARK: - Plan List
     
     private var planList: some View {
-        LazyVStack(spacing: 12) {
+        VStack(spacing: 12) {
             ForEach(viewModel.plans) { plan in
-                PlanRow(plan: plan) {
+                PlanRow(plan: plan, onToggle: {
                     Task { await viewModel.togglePlan(plan) }
-                }
-                .swipeActions(edge: .trailing) {
-                    Button(role: .destructive) {
-                        Task { await viewModel.deletePlan(plan) }
-                    } label: {
-                        Label("删除", systemImage: "trash")
-                    }
-                }
+                }, onDelete: {
+                    Task { await viewModel.deletePlan(plan) }
+                })
             }
         }
     }
@@ -173,26 +169,32 @@ struct PlanListView: View {
 struct PlanRow: View {
     let plan: Plan
     let onToggle: () -> Void
+    let onDelete: () -> Void
     
     var body: some View {
-        Button(action: onToggle) {
-            HStack(spacing: 16) {
-                // Checkbox
+        HStack(spacing: 16) {
+            // Checkbox
+            Button(action: onToggle) {
                 Image(systemName: plan.isCompleted ? "checkmark.circle.fill" : "circle")
                     .font(.title2)
                     .foregroundStyle(plan.isCompleted ? .green : .secondary)
-                
-                // Content
-                Text(plan.content)
-                    .strikethrough(plan.isCompleted)
-                    .foregroundStyle(plan.isCompleted ? .secondary : .primary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(16)
-            .background(.regularMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
+            
+            // Content
+            Text(plan.content)
+                .strikethrough(plan.isCompleted)
+                .foregroundStyle(plan.isCompleted ? .secondary : .primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            
+            // Delete button
+            Button(action: onDelete) {
+                Image(systemName: "trash")
+                    .foregroundStyle(.red.opacity(0.7))
+            }
         }
-        .buttonStyle(.plain)
+        .padding(16)
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 }
 

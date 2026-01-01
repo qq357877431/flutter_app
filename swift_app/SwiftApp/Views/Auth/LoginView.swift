@@ -2,6 +2,7 @@
 // Login and registration screen with glass effect
 
 import SwiftUI
+import UIKit
 
 struct LoginView: View {
     @EnvironmentObject var authManager: AuthManager
@@ -258,7 +259,7 @@ struct MeshGradientBackground: View {
                 // Background
                 context.fill(
                     Path(CGRect(origin: .zero, size: size)),
-                    with: .color(Color(UIColor.systemBackground))
+                    with: .color(Color(uiColor: .systemBackground))
                 )
                 
                 // Animated orbs

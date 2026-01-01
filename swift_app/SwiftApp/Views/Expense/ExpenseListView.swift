@@ -2,6 +2,7 @@
 // Expense tracking view with iOS 26 glass design
 
 import SwiftUI
+import UIKit
 
 struct ExpenseListView: View {
     @State private var viewModel = ExpenseViewModel()
@@ -28,7 +29,7 @@ struct ExpenseListView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 100)
             }
-            .background(Color(UIColor.systemGroupedBackground))
+            .background(Color(uiColor: .systemGroupedBackground))
             .navigationTitle("消费记录")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -39,7 +40,7 @@ struct ExpenseListView: View {
                                 .background(
                                     viewModel.selectedYear != nil || viewModel.selectedMonth != nil
                                         ? Color.green.opacity(0.15)
-                                        : Color(.systemGray5)
+                                        : Color(uiColor: .systemGray5)
                                 )
                                 .clipShape(Circle())
                                 .overlay(
@@ -125,16 +126,11 @@ struct ExpenseListView: View {
     // MARK: - Expense List
     
     private var expenseList: some View {
-        LazyVStack(spacing: 12) {
+        VStack(spacing: 12) {
             ForEach(viewModel.filteredExpenses) { expense in
-                ExpenseRow(expense: expense)
-                    .swipeActions(edge: .trailing) {
-                        Button(role: .destructive) {
-                            Task { await viewModel.deleteExpense(expense) }
-                        } label: {
-                            Label("删除", systemImage: "trash")
-                        }
-                    }
+                ExpenseRow(expense: expense, onDelete: {
+                    Task { await viewModel.deleteExpense(expense) }
+                })
             }
         }
     }
@@ -172,6 +168,7 @@ struct ExpenseListView: View {
 
 struct ExpenseRow: View {
     let expense: Expense
+    let onDelete: () -> Void
     
     private var category: ExpenseCategory {
         ExpenseCategory(rawValue: expense.category) ?? .other
@@ -221,6 +218,12 @@ struct ExpenseRow: View {
                 Text(formatTime(expense.createdAt))
                     .font(.caption)
                     .foregroundStyle(.tertiary)
+            }
+            
+            // Delete button
+            Button(action: onDelete) {
+                Image(systemName: "trash")
+                    .foregroundStyle(.red.opacity(0.6))
             }
         }
         .padding(16)
@@ -312,7 +315,7 @@ struct AddExpenseSheet: View {
                             }
                         }
                     }
-                    .disabled(Double(amount) == nil || Double(amount)! <= 0)
+                    .disabled(Double(amount) == nil || (Double(amount) ?? 0) <= 0)
                 }
             }
         }

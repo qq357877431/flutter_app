@@ -2,6 +2,7 @@
 // Water tracking view with iOS 26 glass design
 
 import SwiftUI
+import UIKit
 
 struct WaterTrackerView: View {
     @State private var viewModel = WaterViewModel()
@@ -26,7 +27,7 @@ struct WaterTrackerView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 100)
             }
-            .background(Color(UIColor.systemGroupedBackground))
+            .background(Color(uiColor: .systemGroupedBackground))
             .navigationTitle("喝水记录")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -155,14 +156,9 @@ struct WaterTrackerView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 16))
             } else {
                 ForEach(Array(viewModel.records.enumerated()), id: \.element.id) { index, record in
-                    RecordRow(record: record)
-                        .swipeActions(edge: .trailing) {
-                            Button(role: .destructive) {
-                                viewModel.deleteRecord(at: index)
-                            } label: {
-                                Label("删除", systemImage: "trash")
-                            }
-                        }
+                    RecordRow(record: record, onDelete: {
+                        viewModel.deleteRecord(at: index)
+                    })
                 }
             }
         }
@@ -201,6 +197,7 @@ struct DrinkButton: View {
 
 struct RecordRow: View {
     let record: WaterRecord
+    let onDelete: () -> Void
     
     private var drinkType: DrinkType? {
         DrinkType.allTypes.first { $0.name == record.type }
@@ -228,6 +225,11 @@ struct RecordRow: View {
             Text("+\(record.amount) ml")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.blue)
+            
+            Button(action: onDelete) {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding(12)
         .background(.regularMaterial)
