@@ -2,141 +2,148 @@
 //  ContentView.swift
 //  LiquidGlassDemo
 //
-//  Root view integrating LiquidTabBarView with demo content
+//  Root view with bottom-positioned Liquid Glass Tab Bar
 //
 
 import SwiftUI
 
 struct ContentView: View {
     @State private var selectedTab: LiquidTabItem = .home
-    @State private var liquidConfig = LiquidConfiguration.default
     
     var body: some View {
         GeometryReader { geometry in
-            ZStack(alignment: .bottom) {
-                // Animated background
-                AnimatedBackgroundView()
+            ZStack {
+                // Background
+                BackgroundView()
                     .ignoresSafeArea()
                 
-                // Content area
+                // Main layout
                 VStack(spacing: 0) {
-                    // Main content based on selected tab
-                    Group {
-                        switch selectedTab {
-                        case .home:
-                            HomeView()
-                        case .search:
-                            SearchView()
-                        case .notifications:
-                            NotificationsView()
-                        case .profile:
-                            ProfileView()
-                        }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    // Content area - takes remaining space
+                    TabContentView(selectedTab: selectedTab)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                     
-                    // Space for tab bar
-                    Color.clear.frame(height: 104)
+                    // Bottom Tab Bar - fixed at bottom
+                    LiquidTabBarView(selectedTab: $selectedTab)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? 0 : 16)
                 }
-                
-                // Liquid Glass Tab Bar
-                LiquidTabBarView(
-                    selectedTab: $selectedTab,
-                    config: liquidConfig
-                )
             }
+            .ignoresSafeArea(.keyboard)
         }
-        .ignoresSafeArea(.keyboard)
         .preferredColorScheme(.dark)
     }
 }
 
-// MARK: - Animated Background
+// MARK: - Tab Content
 
-struct AnimatedBackgroundView: View {
-    @State private var phase: CGFloat = 0
+struct TabContentView: View {
+    let selectedTab: LiquidTabItem
     
     var body: some View {
-        TimelineView(.animation) { timeline in
-            let time = timeline.date.timeIntervalSinceReferenceDate
+        switch selectedTab {
+        case .home:
+            HomeView()
+        case .search:
+            SearchView()
+        case .notifications:
+            NotificationsView()
+        case .profile:
+            ProfileView()
+        }
+    }
+}
+
+// MARK: - Background
+
+struct BackgroundView: View {
+    var body: some View {
+        ZStack {
+            // Base gradient
+            LinearGradient(
+                colors: [
+                    Color(red: 0.06, green: 0.06, blue: 0.14),
+                    Color(red: 0.04, green: 0.04, blue: 0.10)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
             
-            Canvas { context, size in
-                // Base gradient
-                let baseGradient = Gradient(colors: [
-                    Color(red: 0.05, green: 0.05, blue: 0.12),
-                    Color(red: 0.08, green: 0.06, blue: 0.18),
-                    Color(red: 0.05, green: 0.08, blue: 0.15)
-                ])
+            // Ambient orbs
+            TimelineView(.animation(minimumInterval: 1/30)) { timeline in
+                let time = timeline.date.timeIntervalSinceReferenceDate
                 
-                context.fill(
-                    Rectangle().path(in: CGRect(origin: .zero, size: size)),
-                    with: .linearGradient(
-                        baseGradient,
-                        startPoint: .zero,
-                        endPoint: CGPoint(x: size.width, y: size.height)
+                Canvas { context, size in
+                    // Purple orb
+                    drawOrb(
+                        context: context,
+                        center: CGPoint(
+                            x: size.width * 0.3 + sin(time * 0.3) * 30,
+                            y: size.height * 0.25 + cos(time * 0.25) * 20
+                        ),
+                        radius: 180,
+                        color: .purple.opacity(0.25)
                     )
-                )
-                
-                // Floating orbs
-                let orbConfigs: [(color: Color, baseX: CGFloat, baseY: CGFloat, radius: CGFloat, speed: CGFloat)] = [
-                    (.purple.opacity(0.3), 0.3, 0.2, 200, 0.3),
-                    (.blue.opacity(0.25), 0.7, 0.4, 180, 0.4),
-                    (.cyan.opacity(0.2), 0.2, 0.7, 160, 0.35),
-                    (.indigo.opacity(0.25), 0.8, 0.8, 140, 0.45)
-                ]
-                
-                for orb in orbConfigs {
-                    let x = orb.baseX * size.width + sin(time * orb.speed) * 50
-                    let y = orb.baseY * size.height + cos(time * orb.speed * 0.8) * 40
                     
-                    let gradient = Gradient(colors: [
-                        orb.color,
-                        orb.color.opacity(0)
-                    ])
+                    // Blue orb
+                    drawOrb(
+                        context: context,
+                        center: CGPoint(
+                            x: size.width * 0.75 + cos(time * 0.35) * 25,
+                            y: size.height * 0.5 + sin(time * 0.3) * 30
+                        ),
+                        radius: 150,
+                        color: .blue.opacity(0.2)
+                    )
                     
-                    context.fill(
-                        Circle().path(in: CGRect(
-                            x: x - orb.radius,
-                            y: y - orb.radius,
-                            width: orb.radius * 2,
-                            height: orb.radius * 2
-                        )),
-                        with: .radialGradient(
-                            gradient,
-                            center: CGPoint(x: x, y: y),
-                            startRadius: 0,
-                            endRadius: orb.radius
-                        )
+                    // Cyan orb
+                    drawOrb(
+                        context: context,
+                        center: CGPoint(
+                            x: size.width * 0.2 + cos(time * 0.4) * 20,
+                            y: size.height * 0.7 + sin(time * 0.35) * 25
+                        ),
+                        radius: 120,
+                        color: .cyan.opacity(0.18)
                     )
                 }
             }
         }
     }
+    
+    private func drawOrb(context: GraphicsContext, center: CGPoint, radius: CGFloat, color: Color) {
+        let gradient = Gradient(colors: [color, color.opacity(0)])
+        context.fill(
+            Circle().path(in: CGRect(
+                x: center.x - radius,
+                y: center.y - radius,
+                width: radius * 2,
+                height: radius * 2
+            )),
+            with: .radialGradient(gradient, center: center, startRadius: 0, endRadius: radius)
+        )
+    }
 }
 
-// MARK: - Notifications View (New)
+// MARK: - Views
 
 struct NotificationsView: View {
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 20) {
             Spacer()
             
             Image(systemName: "bell.badge.fill")
-                .font(.system(size: 70))
+                .font(.system(size: 60))
                 .foregroundStyle(
-                    LinearGradient(
-                        colors: [.orange, .red],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+                    LinearGradient(colors: [.orange, .red], startPoint: .topLeading, endPoint: .bottomTrailing)
                 )
                 .shadow(color: .orange.opacity(0.5), radius: 20)
             
-            Text("Notifications")
-                .font(.system(size: 28, weight: .bold))
+            Text("Activity")
+                .font(.title.bold())
                 .foregroundColor(.white)
             
-            Text("Stay updated with the latest")
+            Text("Your notifications appear here")
                 .font(.subheadline)
                 .foregroundColor(.white.opacity(0.6))
             

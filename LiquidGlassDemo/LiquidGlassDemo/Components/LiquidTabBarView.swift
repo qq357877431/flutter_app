@@ -2,14 +2,8 @@
 //  LiquidTabBarView.swift
 //  LiquidGlassDemo
 //
-//  High-fidelity Liquid Glass Morphing Tab Bar
-//  Implements Telegram/Apple Watch style metaball fusion effects
-//
-//  Techniques:
-//  - Metaball fusion via alphaThreshold filter
-//  - Physical spring animations with velocity-based deformation
-//  - Home Indicator soft fusion
-//  - Symbol Effects for icons
+//  High-fidelity Liquid Glass Morphing Bottom Tab Bar
+//  Telegram/Apple Watch style metaball fusion effects
 //
 
 import SwiftUI
@@ -17,44 +11,38 @@ import SwiftUI
 // MARK: - Configuration
 
 /// Tunable parameters for the liquid glass effect
-/// Adjust these values to fine-tune the visual behavior
 struct LiquidConfiguration {
     /// Controls how "sticky" the liquid feels (0.0 - 1.0)
-    /// Higher values = more resistance to movement
     var viscosity: CGFloat = 0.65
     
-    /// Blur radius for the glass material effect
-    var blurRadius: CGFloat = 25.0
+    /// Blur radius for metaball fusion
+    var blurRadius: CGFloat = 20.0
     
-    /// Surface tension affecting metaball merging threshold
-    /// Lower values = blobs merge more easily
+    /// Surface tension affecting metaball merging (0.3 - 0.7 recommended)
     var tension: CGFloat = 0.5
     
-    /// Spring response time (seconds)
+    /// Spring response time
     var springResponse: CGFloat = 0.4
     
-    /// Spring damping (0.0 = undamped, 1.0 = critically damped)
+    /// Spring damping
     var springDamping: CGFloat = 0.65
     
-    /// Maximum stretch factor when moving fast
-    var maxStretch: CGFloat = 1.25
+    /// Maximum stretch when moving fast
+    var maxStretch: CGFloat = 1.2
     
-    /// Maximum squash factor when decelerating
+    /// Maximum squash when decelerating
     var maxSquash: CGFloat = 0.85
     
-    /// Indicator corner radius
-    var indicatorRadius: CGFloat = 22.0
+    /// Tab bar height
+    var barHeight: CGFloat = 65
     
-    /// Container corner radius
-    var containerRadius: CGFloat = 32.0
-    
-    /// Metaball blob radius for fusion effect
-    var blobRadius: CGFloat = 28.0
+    /// Indicator size
+    var indicatorSize: CGFloat = 50
     
     static let `default` = LiquidConfiguration()
 }
 
-// MARK: - Tab Item Model
+// MARK: - Tab Item
 
 enum LiquidTabItem: Int, CaseIterable, Identifiable {
     case home = 0
@@ -83,356 +71,276 @@ enum LiquidTabItem: Int, CaseIterable, Identifiable {
     }
 }
 
-// MARK: - Main View
+// MARK: - Main Tab Bar View
 
 struct LiquidTabBarView: View {
     @Binding var selectedTab: LiquidTabItem
     var config: LiquidConfiguration = .default
     
-    // Animation state
-    @State private var indicatorOffset: CGFloat = 0
-    @State private var previousOffset: CGFloat = 0
-    @State private var velocity: CGFloat = 0
     @State private var stretchFactor: CGFloat = 1.0
     @State private var isAnimating: Bool = false
     
-    // Touch tracking
-    @State private var isDragging: Bool = false
-    @State private var dragLocation: CGPoint = .zero
-    
-    // Haptics
-    private let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-    private let selectionFeedback = UISelectionFeedbackGenerator()
+    private let hapticFeedback = UIImpactFeedbackGenerator(style: .medium)
     
     var body: some View {
         GeometryReader { geometry in
-            let tabWidth = geometry.size.width / CGFloat(LiquidTabItem.allCases.count)
-            let containerHeight: CGFloat = 70
+            let tabCount = CGFloat(LiquidTabItem.allCases.count)
+            let tabWidth = geometry.size.width / tabCount
+            let selectedX = CGFloat(selectedTab.rawValue) * tabWidth + tabWidth / 2
             
-            ZStack(alignment: .bottom) {
-                // Metaball Layer - Creates the liquid fusion effect
-                MetaballFusionLayer(
-                    selectedIndex: selectedTab.rawValue,
+            ZStack {
+                // Layer 1: Metaball fusion background
+                MetaballLayer(
+                    selectedX: selectedX,
                     tabWidth: tabWidth,
-                    containerHeight: containerHeight,
-                    indicatorOffset: indicatorOffset,
+                    barHeight: config.barHeight,
                     stretchFactor: stretchFactor,
                     config: config
                 )
                 
-                // Glass Container with soft Home Indicator fusion
-                GlassContainerView(
-                    config: config,
-                    containerHeight: containerHeight
-                )
+                // Layer 2: Glass material container
+                RoundedRectangle(cornerRadius: config.barHeight / 2, style: .continuous)
+                    .fill(.ultraThinMaterial)
+                    .frame(height: config.barHeight)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: config.barHeight / 2, style: .continuous)
+                            .strokeBorder(
+                                LinearGradient(
+                                    colors: [.white.opacity(0.4), .white.opacity(0.1)],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                ),
+                                lineWidth: 0.5
+                            )
+                    )
+                    .shadow(color: .black.opacity(0.25), radius: 20, y: 5)
                 
-                // Tab Items
+                // Layer 3: Selection indicator
+                SelectionIndicator(
+                    selectedX: selectedX,
+                    stretchFactor: stretchFactor,
+                    config: config
+                )
+                .frame(height: config.barHeight)
+                
+                // Layer 4: Tab buttons
                 HStack(spacing: 0) {
                     ForEach(LiquidTabItem.allCases) { tab in
-                        LiquidTabButton(
+                        TabButton(
                             tab: tab,
-                            isSelected: selectedTab == tab,
-                            config: config
+                            isSelected: selectedTab == tab
                         ) {
-                            selectTab(tab, tabWidth: tabWidth)
+                            selectTab(tab, from: selectedTab, tabWidth: tabWidth)
                         }
-                        .frame(width: tabWidth, height: containerHeight)
+                        .frame(width: tabWidth, height: config.barHeight)
                     }
                 }
-                .frame(height: containerHeight)
+                .frame(height: config.barHeight)
             }
-            .frame(height: containerHeight + 34) // Extra space for Home Indicator fusion
+            .frame(height: config.barHeight)
             .onAppear {
-                impactFeedback.prepare()
-                selectionFeedback.prepare()
-                // Set initial position
-                indicatorOffset = CGFloat(selectedTab.rawValue) * tabWidth + tabWidth / 2
-                previousOffset = indicatorOffset
+                hapticFeedback.prepare()
             }
         }
+        .frame(height: config.barHeight)
     }
     
-    private func selectTab(_ tab: LiquidTabItem, tabWidth: CGFloat) {
-        guard tab != selectedTab else { return }
+    private func selectTab(_ newTab: LiquidTabItem, from oldTab: LiquidTabItem, tabWidth: CGFloat) {
+        guard newTab != oldTab else { return }
         
-        let targetOffset = CGFloat(tab.rawValue) * tabWidth + tabWidth / 2
-        let distance = abs(targetOffset - indicatorOffset)
+        let direction: CGFloat = newTab.rawValue > oldTab.rawValue ? 1 : -1
         
-        // Calculate velocity for stretch effect
-        velocity = (targetOffset - indicatorOffset) / max(distance, 1) * 500
-        
-        // Trigger haptic
-        impactFeedback.impactOccurred(intensity: 0.7)
-        
-        // Start animation
+        hapticFeedback.impactOccurred(intensity: 0.7)
         isAnimating = true
         
-        // Stretch phase - elongate in direction of movement
-        withAnimation(.easeOut(duration: 0.1)) {
-            stretchFactor = velocity > 0 ? config.maxStretch : (1 / config.maxStretch)
+        // Stretch in movement direction
+        withAnimation(.easeOut(duration: 0.08)) {
+            stretchFactor = direction > 0 ? config.maxStretch : (2 - config.maxStretch)
         }
         
-        // Main movement with spring
+        // Move to new tab
         withAnimation(.spring(
             response: config.springResponse,
             dampingFraction: config.springDamping,
             blendDuration: 0
         )) {
-            selectedTab = tab
-            indicatorOffset = targetOffset
+            selectedTab = newTab
         }
         
-        // Squash on arrival + overshoot recovery
-        DispatchQueue.main.asyncAfter(deadline: .now() + config.springResponse * 0.6) {
+        // Squash on arrival
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
             withAnimation(.spring(response: 0.2, dampingFraction: 0.5)) {
                 stretchFactor = config.maxSquash
             }
         }
         
         // Return to normal
-        DispatchQueue.main.asyncAfter(deadline: .now() + config.springResponse * 0.9) {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
                 stretchFactor = 1.0
                 isAnimating = false
             }
         }
-        
-        previousOffset = indicatorOffset
     }
 }
 
-// MARK: - Metaball Fusion Layer
+// MARK: - Metaball Layer
 
-/// Creates the liquid "pull and tear" effect using alphaThreshold
-struct MetaballFusionLayer: View {
-    let selectedIndex: Int
+struct MetaballLayer: View {
+    let selectedX: CGFloat
     let tabWidth: CGFloat
-    let containerHeight: CGFloat
-    let indicatorOffset: CGFloat
+    let barHeight: CGFloat
     let stretchFactor: CGFloat
     let config: LiquidConfiguration
     
     var body: some View {
         Canvas { context, size in
-            // Create metaball shapes that will fuse together
-            
-            // Container blob (background bar shape)
-            let containerRect = CGRect(
-                x: config.containerRadius,
-                y: size.height - containerHeight - 20,
-                width: size.width - config.containerRadius * 2,
-                height: containerHeight
-            )
-            
-            let containerPath = RoundedRectangle(cornerRadius: config.containerRadius)
-                .path(in: containerRect)
-            
-            // Selection indicator blob
-            let indicatorWidth = tabWidth * 0.7 * stretchFactor
-            let indicatorHeight = 44 / stretchFactor
-            let indicatorRect = CGRect(
-                x: indicatorOffset - indicatorWidth / 2,
-                y: size.height - containerHeight - 20 + (containerHeight - indicatorHeight) / 2,
-                width: indicatorWidth,
-                height: indicatorHeight
-            )
-            
-            let indicatorPath = RoundedRectangle(cornerRadius: config.indicatorRadius)
-                .path(in: indicatorRect)
-            
-            // Bridge blobs for liquid connection effect
-            let bridgeRadius = config.blobRadius
-            
-            // Left bridge blob
-            let leftBridgeCenter = CGPoint(
-                x: indicatorRect.minX + bridgeRadius * 0.3,
-                y: indicatorRect.midY
-            )
-            let leftBridgePath = Circle().path(in: CGRect(
-                x: leftBridgeCenter.x - bridgeRadius,
-                y: leftBridgeCenter.y - bridgeRadius,
-                width: bridgeRadius * 2,
-                height: bridgeRadius * 2
-            ))
-            
-            // Right bridge blob
-            let rightBridgeCenter = CGPoint(
-                x: indicatorRect.maxX - bridgeRadius * 0.3,
-                y: indicatorRect.midY
-            )
-            let rightBridgePath = Circle().path(in: CGRect(
-                x: rightBridgeCenter.x - bridgeRadius,
-                y: rightBridgeCenter.y - bridgeRadius,
-                width: bridgeRadius * 2,
-                height: bridgeRadius * 2
-            ))
-            
-            // Draw all blobs with the same color for alphaThreshold fusion
+            // Draw metaballs that will fuse together
             context.addFilter(.alphaThreshold(min: config.tension, color: .white))
             context.addFilter(.blur(radius: config.blurRadius))
             
             context.drawLayer { ctx in
-                ctx.fill(containerPath, with: .color(.white))
-                ctx.fill(indicatorPath, with: .color(.white))
-                ctx.fill(leftBridgePath, with: .color(.white))
-                ctx.fill(rightBridgePath, with: .color(.white))
+                // Main container blob
+                let containerRect = CGRect(
+                    x: 0,
+                    y: (size.height - barHeight) / 2,
+                    width: size.width,
+                    height: barHeight
+                )
+                ctx.fill(
+                    RoundedRectangle(cornerRadius: barHeight / 2)
+                        .path(in: containerRect),
+                    with: .color(.white)
+                )
+                
+                // Indicator blob
+                let indicatorWidth = config.indicatorSize * stretchFactor
+                let indicatorHeight = config.indicatorSize / stretchFactor
+                let indicatorRect = CGRect(
+                    x: selectedX - indicatorWidth / 2,
+                    y: size.height / 2 - indicatorHeight / 2,
+                    width: indicatorWidth,
+                    height: indicatorHeight
+                )
+                ctx.fill(
+                    Ellipse().path(in: indicatorRect),
+                    with: .color(.white)
+                )
+                
+                // Bridge blobs for liquid connection
+                let bridgeSize = config.indicatorSize * 0.6
+                
+                // Left bridge
+                ctx.fill(
+                    Circle().path(in: CGRect(
+                        x: selectedX - indicatorWidth / 2 - bridgeSize * 0.3,
+                        y: size.height / 2 - bridgeSize / 2,
+                        width: bridgeSize,
+                        height: bridgeSize
+                    )),
+                    with: .color(.white)
+                )
+                
+                // Right bridge
+                ctx.fill(
+                    Circle().path(in: CGRect(
+                        x: selectedX + indicatorWidth / 2 - bridgeSize * 0.7,
+                        y: size.height / 2 - bridgeSize / 2,
+                        width: bridgeSize,
+                        height: bridgeSize
+                    )),
+                    with: .color(.white)
+                )
             }
         }
-        .compositingGroup()
         .opacity(0.15)
         .blendMode(.plusLighter)
     }
 }
 
-// MARK: - Glass Container
+// MARK: - Selection Indicator
 
-struct GlassContainerView: View {
-    let config: LiquidConfiguration
-    let containerHeight: CGFloat
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            // Main glass container
-            RoundedRectangle(cornerRadius: config.containerRadius, style: .continuous)
-                .fill(.ultraThinMaterial)
-                .frame(height: containerHeight)
-                .overlay(
-                    // Top edge highlight
-                    RoundedRectangle(cornerRadius: config.containerRadius, style: .continuous)
-                        .strokeBorder(
-                            LinearGradient(
-                                colors: [
-                                    .white.opacity(0.5),
-                                    .white.opacity(0.2),
-                                    .white.opacity(0.05),
-                                    .clear
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            ),
-                            lineWidth: 0.5
-                        )
-                )
-                .shadow(color: .black.opacity(0.2), radius: 20, y: 10)
-            
-            // Home Indicator fusion zone - gradual fade
-            Rectangle()
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(.systemBackground).opacity(0.3),
-                            Color(.systemBackground).opacity(0.1),
-                            .clear
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .frame(height: 34)
-                .blur(radius: 10)
-        }
-        .padding(.horizontal, 16)
-    }
-}
-
-// MARK: - Tab Button
-
-struct LiquidTabButton: View {
-    let tab: LiquidTabItem
-    let isSelected: Bool
-    let config: LiquidConfiguration
-    let action: () -> Void
-    
-    @State private var isPressed: Bool = false
-    @State private var symbolBounce: Bool = false
-    
-    var body: some View {
-        Button(action: {
-            triggerSymbolEffect()
-            action()
-        }) {
-            VStack(spacing: 4) {
-                // Icon with Symbol Effect
-                Image(systemName: tab.icon)
-                    .font(.system(size: isSelected ? 24 : 20, weight: .semibold))
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(isSelected ? .primary : .secondary)
-                    .symbolEffect(.bounce, value: symbolBounce)
-                    .scaleEffect(isPressed ? 0.85 : 1.0)
-                    .animation(
-                        .spring(response: 0.2, dampingFraction: 0.6),
-                        value: isPressed
-                    )
-                
-                // Label
-                Text(tab.label)
-                    .font(.system(size: 10, weight: isSelected ? .semibold : .regular))
-                    .foregroundStyle(isSelected ? .primary : .tertiary)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(LiquidButtonStyle(isPressed: $isPressed))
-    }
-    
-    private func triggerSymbolEffect() {
-        symbolBounce.toggle()
-    }
-}
-
-// MARK: - Button Style
-
-struct LiquidButtonStyle: ButtonStyle {
-    @Binding var isPressed: Bool
-    
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .onChange(of: configuration.isPressed) { _, pressed in
-                isPressed = pressed
-            }
-    }
-}
-
-// MARK: - Selection Indicator Overlay
-
-struct SelectionIndicatorView: View {
-    let tabWidth: CGFloat
-    let selectedIndex: Int
+struct SelectionIndicator: View {
+    let selectedX: CGFloat
     let stretchFactor: CGFloat
     let config: LiquidConfiguration
     
     var body: some View {
         GeometryReader { geometry in
-            let indicatorWidth = tabWidth * 0.65 * stretchFactor
-            let xOffset = CGFloat(selectedIndex) * tabWidth + (tabWidth - indicatorWidth) / 2
+            let indicatorWidth = config.indicatorSize * stretchFactor
+            let indicatorHeight = config.indicatorSize / stretchFactor
             
-            RoundedRectangle(cornerRadius: config.indicatorRadius, style: .continuous)
+            // Glowing indicator
+            Ellipse()
                 .fill(
-                    LinearGradient(
+                    RadialGradient(
                         colors: [
-                            .white.opacity(0.4),
-                            .white.opacity(0.2)
+                            .white.opacity(0.35),
+                            .white.opacity(0.15),
+                            .clear
                         ],
-                        startPoint: .top,
-                        endPoint: .bottom
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: indicatorWidth / 2
                     )
                 )
-                .frame(width: indicatorWidth, height: 44 / stretchFactor)
-                .overlay(
-                    RoundedRectangle(cornerRadius: config.indicatorRadius, style: .continuous)
-                        .strokeBorder(.white.opacity(0.3), lineWidth: 0.5)
-                )
-                .shadow(color: .white.opacity(0.2), radius: 8, y: 0)
-                .offset(x: xOffset)
+                .frame(width: indicatorWidth, height: indicatorHeight)
+                .position(x: selectedX, y: geometry.size.height / 2)
                 .animation(
                     .spring(
                         response: config.springResponse,
                         dampingFraction: config.springDamping,
                         blendDuration: 0
                     ),
-                    value: selectedIndex
+                    value: selectedX
                 )
         }
+    }
+}
+
+// MARK: - Tab Button
+
+struct TabButton: View {
+    let tab: LiquidTabItem
+    let isSelected: Bool
+    let action: () -> Void
+    
+    @State private var bounceValue: Bool = false
+    @State private var isPressed: Bool = false
+    
+    var body: some View {
+        Button(action: {
+            bounceValue.toggle()
+            action()
+        }) {
+            VStack(spacing: 4) {
+                Image(systemName: tab.icon)
+                    .font(.system(size: isSelected ? 22 : 18, weight: .semibold))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(isSelected ? .white : .white.opacity(0.5))
+                    .symbolEffect(.bounce, value: bounceValue)
+                    .scaleEffect(isPressed ? 0.85 : 1.0)
+                
+                Text(tab.label)
+                    .font(.system(size: 10, weight: isSelected ? .semibold : .regular))
+                    .foregroundStyle(isSelected ? .white : .white.opacity(0.4))
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .buttonStyle(PressableButtonStyle(isPressed: $isPressed))
+    }
+}
+
+struct PressableButtonStyle: ButtonStyle {
+    @Binding var isPressed: Bool
+    
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .onChange(of: configuration.isPressed) { _, newValue in
+                withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {
+                    isPressed = newValue
+                }
+            }
     }
 }
 
@@ -440,11 +348,10 @@ struct SelectionIndicatorView: View {
 
 #Preview {
     ZStack {
-        // Background
         LinearGradient(
             colors: [
-                Color(red: 0.1, green: 0.1, blue: 0.2),
-                Color(red: 0.05, green: 0.05, blue: 0.15)
+                Color(red: 0.08, green: 0.08, blue: 0.15),
+                Color(red: 0.05, green: 0.05, blue: 0.12)
             ],
             startPoint: .top,
             endPoint: .bottom
@@ -454,22 +361,15 @@ struct SelectionIndicatorView: View {
         VStack {
             Spacer()
             
-            // Demo content
             Text("Liquid Glass Demo")
-                .font(.largeTitle.bold())
+                .font(.title.bold())
                 .foregroundColor(.white)
             
             Spacer()
             
-            // Tab Bar
-            LiquidTabBarView(
-                selectedTab: .constant(.home),
-                config: LiquidConfiguration(
-                    viscosity: 0.7,
-                    blurRadius: 30,
-                    tension: 0.5
-                )
-            )
+            LiquidTabBarView(selectedTab: .constant(.home))
+                .padding(.horizontal, 16)
+                .padding(.bottom, 30)
         }
     }
     .preferredColorScheme(.dark)
