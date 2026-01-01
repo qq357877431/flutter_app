@@ -122,3 +122,61 @@ workflows:
     artifacts:
       - flutter_app/build/FlutterApp-iOS26-unsigned.ipa
       - flutter_app/build/Runner.xcarchive
+
+  swift-app-ios26:
+    name: SwiftUI App (iOS 26 Native)
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+    
+    environment:
+      xcode: 26.1
+    
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+      cancel_previous_builds: true
+    
+    scripts:
+      - name: Show Xcode version
+        script: |
+          xcodebuild -version
+          xcodebuild -showsdks
+      
+      - name: Build SwiftUI App
+        script: |
+          cd swift_app
+          xcodebuild build \
+            -project SwiftApp.xcodeproj \
+            -scheme SwiftApp \
+            -destination 'generic/platform=iOS' \
+            -configuration Release \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+      
+      - name: Archive App
+        script: |
+          cd swift_app
+          xcodebuild archive \
+            -project SwiftApp.xcodeproj \
+            -scheme SwiftApp \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/SwiftApp.xcarchive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            SKIP_INSTALL=NO
+      
+      - name: Export Unsigned IPA
+        script: |
+          cd swift_app/build
+          mkdir -p Payload
+          cp -r SwiftApp.xcarchive/Products/Applications/SwiftApp.app Payload/
+          zip -r SwiftApp-iOS26-unsigned.ipa Payload
+    
+    artifacts:
+      - swift_app/build/SwiftApp-iOS26-unsigned.ipa
+      - swift_app/build/SwiftApp.xcarchive
