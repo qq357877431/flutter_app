@@ -1,0 +1,65 @@
+name: Build Liquid Glass Demo
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'LiquidGlassDemo/**'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Select Xcode 16
+      run: sudo xcode-select -s /Applications/Xcode_16.app/Contents/Developer
+    
+    - name: Show Xcode version
+      run: xcodebuild -version
+    
+    - name: Build for iOS Simulator
+      run: |
+        cd LiquidGlassDemo
+        xcodebuild clean build \
+          -project LiquidGlassDemo.xcodeproj \
+          -scheme LiquidGlassDemo \
+          -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.0' \
+          -configuration Debug \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
+    
+    - name: Build IPA for Device (Unsigned)
+      run: |
+        cd LiquidGlassDemo
+        xcodebuild clean archive \
+          -project LiquidGlassDemo.xcodeproj \
+          -scheme LiquidGlassDemo \
+          -destination 'generic/platform=iOS' \
+          -configuration Release \
+          -archivePath build/LiquidGlassDemo.xcarchive \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO \
+          DEVELOPMENT_TEAM=""
+    
+    - name: Export Unsigned IPA
+      run: |
+        cd LiquidGlassDemo
+        mkdir -p build/Payload
+        cp -r build/LiquidGlassDemo.xcarchive/Products/Applications/LiquidGlassDemo.app build/Payload/
+        cd build
+        zip -r LiquidGlassDemo-unsigned.ipa Payload
+    
+    - name: Upload IPA Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: LiquidGlassDemo-unsigned
+        path: LiquidGlassDemo/build/LiquidGlassDemo-unsigned.ipa
+        retention-days: 7
