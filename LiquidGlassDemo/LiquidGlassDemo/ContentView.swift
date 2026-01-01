@@ -2,32 +2,21 @@
 //  ContentView.swift
 //  LiquidGlassDemo
 //
-//  Root view with Liquid Glass Tab Bar integration
+//  Root view integrating LiquidTabBarView with demo content
 //
 
 import SwiftUI
 
 struct ContentView: View {
-    @State private var selectedTab: TabItem = .home
-    @State private var touchLocation: CGPoint? = nil
+    @State private var selectedTab: LiquidTabItem = .home
+    @State private var liquidConfig = LiquidConfiguration.default
     
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .bottom) {
-                // Background gradient
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.05, green: 0.05, blue: 0.15),
-                        Color(red: 0.1, green: 0.08, blue: 0.2),
-                        Color(red: 0.08, green: 0.12, blue: 0.25)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
-                
-                // Animated background orbs
-                BackgroundOrbs()
+                // Animated background
+                AnimatedBackgroundView()
+                    .ignoresSafeArea()
                 
                 // Content area
                 VStack(spacing: 0) {
@@ -38,95 +27,120 @@ struct ContentView: View {
                             HomeView()
                         case .search:
                             SearchView()
+                        case .notifications:
+                            NotificationsView()
                         case .profile:
                             ProfileView()
-                        case .settings:
-                            SettingsView()
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     
-                    // Spacer for tab bar
-                    Color.clear
-                        .frame(height: 100)
+                    // Space for tab bar
+                    Color.clear.frame(height: 104)
                 }
                 
                 // Liquid Glass Tab Bar
-                LiquidGlassTabBar(
+                LiquidTabBarView(
                     selectedTab: $selectedTab,
-                    touchLocation: $touchLocation
+                    config: liquidConfig
                 )
-                .frame(height: 100)
-                .padding(.horizontal, 20)
-                .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? 0 : 20)
             }
         }
         .ignoresSafeArea(.keyboard)
+        .preferredColorScheme(.dark)
     }
 }
 
-// MARK: - Background Orbs Animation
-struct BackgroundOrbs: View {
-    @State private var animate = false
+// MARK: - Animated Background
+
+struct AnimatedBackgroundView: View {
+    @State private var phase: CGFloat = 0
     
     var body: some View {
-        ZStack {
-            // Large ambient orbs
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [
-                            Color.purple.opacity(0.3),
-                            Color.purple.opacity(0.0)
-                        ],
-                        center: .center,
-                        startRadius: 0,
-                        endRadius: 200
-                    )
-                )
-                .frame(width: 400, height: 400)
-                .offset(x: animate ? -50 : 50, y: animate ? -100 : -150)
-                .blur(radius: 60)
+        TimelineView(.animation) { timeline in
+            let time = timeline.date.timeIntervalSinceReferenceDate
             
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [
-                            Color.blue.opacity(0.25),
-                            Color.blue.opacity(0.0)
-                        ],
-                        center: .center,
-                        startRadius: 0,
-                        endRadius: 180
+            Canvas { context, size in
+                // Base gradient
+                let baseGradient = Gradient(colors: [
+                    Color(red: 0.05, green: 0.05, blue: 0.12),
+                    Color(red: 0.08, green: 0.06, blue: 0.18),
+                    Color(red: 0.05, green: 0.08, blue: 0.15)
+                ])
+                
+                context.fill(
+                    Rectangle().path(in: CGRect(origin: .zero, size: size)),
+                    with: .linearGradient(
+                        baseGradient,
+                        startPoint: .zero,
+                        endPoint: CGPoint(x: size.width, y: size.height)
                     )
                 )
-                .frame(width: 350, height: 350)
-                .offset(x: animate ? 100 : 50, y: animate ? 200 : 250)
-                .blur(radius: 50)
-            
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [
-                            Color.cyan.opacity(0.2),
-                            Color.cyan.opacity(0.0)
-                        ],
-                        center: .center,
-                        startRadius: 0,
-                        endRadius: 150
+                
+                // Floating orbs
+                let orbConfigs: [(color: Color, baseX: CGFloat, baseY: CGFloat, radius: CGFloat, speed: CGFloat)] = [
+                    (.purple.opacity(0.3), 0.3, 0.2, 200, 0.3),
+                    (.blue.opacity(0.25), 0.7, 0.4, 180, 0.4),
+                    (.cyan.opacity(0.2), 0.2, 0.7, 160, 0.35),
+                    (.indigo.opacity(0.25), 0.8, 0.8, 140, 0.45)
+                ]
+                
+                for orb in orbConfigs {
+                    let x = orb.baseX * size.width + sin(time * orb.speed) * 50
+                    let y = orb.baseY * size.height + cos(time * orb.speed * 0.8) * 40
+                    
+                    let gradient = Gradient(colors: [
+                        orb.color,
+                        orb.color.opacity(0)
+                    ])
+                    
+                    context.fill(
+                        Circle().path(in: CGRect(
+                            x: x - orb.radius,
+                            y: y - orb.radius,
+                            width: orb.radius * 2,
+                            height: orb.radius * 2
+                        )),
+                        with: .radialGradient(
+                            gradient,
+                            center: CGPoint(x: x, y: y),
+                            startRadius: 0,
+                            endRadius: orb.radius
+                        )
                     )
-                )
-                .frame(width: 300, height: 300)
-                .offset(x: animate ? -80 : -120, y: animate ? 100 : 50)
-                .blur(radius: 40)
-        }
-        .onAppear {
-            withAnimation(
-                .easeInOut(duration: 8)
-                .repeatForever(autoreverses: true)
-            ) {
-                animate = true
+                }
             }
+        }
+    }
+}
+
+// MARK: - Notifications View (New)
+
+struct NotificationsView: View {
+    var body: some View {
+        VStack(spacing: 24) {
+            Spacer()
+            
+            Image(systemName: "bell.badge.fill")
+                .font(.system(size: 70))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [.orange, .red],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .shadow(color: .orange.opacity(0.5), radius: 20)
+            
+            Text("Notifications")
+                .font(.system(size: 28, weight: .bold))
+                .foregroundColor(.white)
+            
+            Text("Stay updated with the latest")
+                .font(.subheadline)
+                .foregroundColor(.white.opacity(0.6))
+            
+            Spacer()
         }
     }
 }
