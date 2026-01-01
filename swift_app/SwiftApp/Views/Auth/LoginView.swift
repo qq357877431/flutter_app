@@ -182,6 +182,9 @@ struct LoginView: View {
     }
     
     private func submit() {
+        // Dismiss keyboard first
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        
         guard validate() else { return }
         
         Task {
