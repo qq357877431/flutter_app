@@ -31,9 +31,46 @@ struct Expense: Codable, Identifiable {
         note = try container.decodeIfPresent(String.self, forKey: .note)
         
         let dateString = try container.decode(String.self, forKey: .createdAt)
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        createdAt = formatter.date(from: dateString) ?? Date()
+        
+        // Try multiple date formats
+        let formats = [
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+            "yyyy-MM-dd'T'HH:mm:ssZ",
+            "yyyy-MM-dd'T'HH:mm:ss",
+            "yyyy-MM-dd HH:mm:ss"
+        ]
+        
+        var parsedDate: Date?
+        for format in formats {
+            let formatter = DateFormatter()
+            formatter.dateFormat = format
+            formatter.timeZone = TimeZone(identifier: "UTC")
+            if let date = formatter.date(from: dateString) {
+                parsedDate = date
+                break
+            }
+        }
+        
+        // Also try ISO8601DateFormatter
+        if parsedDate == nil {
+            let iso8601Formatter = ISO8601DateFormatter()
+            iso8601Formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            parsedDate = iso8601Formatter.date(from: dateString)
+        }
+        
+        if parsedDate == nil {
+            let iso8601Formatter = ISO8601DateFormatter()
+            iso8601Formatter.formatOptions = [.withInternetDateTime]
+            parsedDate = iso8601Formatter.date(from: dateString)
+        }
+        
+        // Convert UTC to local timezone (Asia/Shanghai)
+        if let utcDate = parsedDate {
+            createdAt = utcDate
+        } else {
+            createdAt = Date()
+        }
     }
 }
 

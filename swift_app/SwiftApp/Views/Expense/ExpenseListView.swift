@@ -36,19 +36,20 @@ struct ExpenseListView: View {
                     HStack(spacing: 8) {
                         Button(action: { showFilterSheet = true }) {
                             Image(systemName: "calendar")
-                                .padding(8)
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundStyle(Color(hex: "10B981"))
+                                .padding(10)
                                 .background(
                                     viewModel.selectedYear != nil || viewModel.selectedMonth != nil
-                                        ? Color.green.opacity(0.15)
-                                        : Color(uiColor: .systemGray5)
+                                        ? Color(hex: "10B981").opacity(0.15)
+                                        : Color(hex: "10B981").opacity(0.1)
                                 )
                                 .clipShape(Circle())
                                 .overlay(
                                     Circle()
-                                        .stroke(viewModel.selectedYear != nil ? Color.green : Color.clear, lineWidth: 1)
+                                        .stroke(viewModel.selectedYear != nil ? Color(hex: "10B981").opacity(0.5) : Color.clear, lineWidth: 1)
                                 )
                         }
-                        .tint(.green)
                         
                         Button(action: { showAddSheet = true }) {
                             HStack(spacing: 4) {
@@ -56,8 +57,8 @@ struct ExpenseListView: View {
                                 Text("记一笔")
                             }
                             .font(.subheadline.weight(.semibold))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
                             .foregroundStyle(.white)
                             .background(
                                 LinearGradient(
@@ -67,6 +68,7 @@ struct ExpenseListView: View {
                                 )
                             )
                             .clipShape(Capsule())
+                            .shadow(color: Color(hex: "10B981").opacity(0.25), radius: 8, y: 3)
                         }
                     }
                 }

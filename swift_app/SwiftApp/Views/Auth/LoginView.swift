@@ -159,6 +159,10 @@ struct LoginView: View {
                 }
                 .padding(.horizontal, 24)
             }
+            .scrollDismissesKeyboard(.interactively)
+            .onTapGesture {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            }
         }
     }
     

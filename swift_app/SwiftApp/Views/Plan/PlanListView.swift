@@ -37,8 +37,10 @@ struct PlanListView: View {
                     HStack(spacing: 8) {
                         Button(action: { showDatePicker = true }) {
                             Image(systemName: "calendar")
-                                .padding(8)
-                                .background(.regularMaterial)
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundStyle(Color(hex: "667eea"))
+                                .padding(10)
+                                .background(Color(hex: "667eea").opacity(0.12))
                                 .clipShape(Circle())
                         }
                         
@@ -48,8 +50,8 @@ struct PlanListView: View {
                                 Text("添加")
                             }
                             .font(.subheadline.weight(.semibold))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
                             .foregroundStyle(.white)
                             .background(
                                 LinearGradient(
@@ -59,6 +61,7 @@ struct PlanListView: View {
                                 )
                             )
                             .clipShape(Capsule())
+                            .shadow(color: Color(hex: "667eea").opacity(0.25), radius: 8, y: 3)
                         }
                     }
                 }

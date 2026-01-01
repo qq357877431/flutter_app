@@ -13,6 +13,7 @@ class PlanViewModel {
     var error: String?
     
     private let api = APIService.shared
+    private let shanghaiTimeZone = TimeZone(identifier: "Asia/Shanghai")!
     
     var completedCount: Int {
         plans.filter { $0.isCompleted }.count
@@ -23,12 +24,22 @@ class PlanViewModel {
         return Double(completedCount) / Double(plans.count)
     }
     
+    init() {
+        // Set selectedDate to today in Shanghai timezone
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = shanghaiTimeZone
+        let todayString = formatter.string(from: Date())
+        selectedDate = formatter.date(from: todayString) ?? Date()
+    }
+    
     func loadPlans() async {
         isLoading = true
         error = nil
         
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = shanghaiTimeZone
         let dateString = formatter.string(from: selectedDate)
         
         do {
@@ -50,6 +61,7 @@ class PlanViewModel {
     func createPlan(content: String) async {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = shanghaiTimeZone
         let dateString = formatter.string(from: selectedDate)
         
         do {

@@ -8,11 +8,17 @@ class AuthManager: ObservableObject {
     @Published var user: User?
     @Published var isLoggedIn = false
     @Published var isLoading = false
+    @Published var isCheckingAuth = true  // New: prevent UI flash before auth check
     @Published var error: String?
     
     private let api = APIService.shared
     
     init() {
+        // Check auth synchronously first
+        if api.hasToken {
+            isLoggedIn = true  // Assume logged in if token exists
+        }
+        
         Task {
             await checkAuth()
         }
@@ -21,10 +27,13 @@ class AuthManager: ObservableObject {
     func checkAuth() async {
         guard api.hasToken else {
             isLoggedIn = false
+            isCheckingAuth = false
             return
         }
         
-        isLoading = true
+        // Token exists, assume logged in while verifying
+        isLoggedIn = true
+        
         do {
             let isValid = try await api.verifyToken()
             if isValid {
@@ -34,9 +43,13 @@ class AuthManager: ObservableObject {
                 isLoggedIn = false
             }
         } catch {
-            isLoggedIn = false
+            // Keep logged in state if network error, only logout on 401
+            if case APIError.unauthorized = error {
+                isLoggedIn = false
+            }
+            // For other errors, keep the user logged in (offline mode)
         }
-        isLoading = false
+        isCheckingAuth = false
     }
     
     func login(account: String, password: String) async -> Bool {

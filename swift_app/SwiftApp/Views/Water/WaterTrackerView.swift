@@ -35,15 +35,16 @@ struct WaterTrackerView: View {
                         Image(systemName: viewModel.reminderEnabled 
                               ? "bell.badge.fill" 
                               : "bell")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(viewModel.reminderEnabled ? Color(hex: "3B82F6") : .secondary)
                             .padding(10)
                             .background(
                                 viewModel.reminderEnabled 
-                                    ? Color.blue.opacity(0.15) 
-                                    : Color(uiColor: .systemGray5)
+                                    ? Color(hex: "3B82F6").opacity(0.12)
+                                    : Color(uiColor: .systemGray5).opacity(0.8)
                             )
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .clipShape(Circle())
                     }
-                    .tint(viewModel.reminderEnabled ? .blue : .secondary)
                 }
             }
             .sheet(isPresented: $showSettingsSheet) {
