@@ -92,17 +92,33 @@ workflows:
           cd flutter_app/ios
           pod install --repo-update
       
-      - name: Build iOS App (Release)
+      - name: Build Flutter for iOS
         script: |
           cd flutter_app
-          flutter build ios --release --no-codesign
+          flutter build ios --release --no-codesign --config-only
+      
+      - name: Archive with xcodebuild
+        script: |
+          cd flutter_app/ios
+          xcodebuild archive \
+            -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -destination 'generic/platform=iOS' \
+            -configuration Release \
+            -archivePath ../build/Runner.xcarchive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            DEVELOPMENT_TEAM="" \
+            SKIP_INSTALL=NO
       
       - name: Export Unsigned IPA
         script: |
-          cd flutter_app/build/ios/iphoneos
+          cd flutter_app/build
           mkdir -p Payload
-          cp -r Runner.app Payload/
+          cp -r Runner.xcarchive/Products/Applications/Runner.app Payload/
           zip -r FlutterApp-iOS26-unsigned.ipa Payload
     
     artifacts:
-      - flutter_app/build/ios/iphoneos/FlutterApp-iOS26-unsigned.ipa
+      - flutter_app/build/FlutterApp-iOS26-unsigned.ipa
+      - flutter_app/build/Runner.xcarchive
