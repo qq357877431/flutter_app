@@ -158,16 +158,20 @@ struct LiquidGlassBackground: View {
                 animationPhase: animationPhase
             )
             
-            // Glass noise texture overlay
-            Rectangle()
-                .fill(
-                    ShaderLibrary.default.liquidGlassNoise(
-                        .float(animationPhase),
-                        .float2(totalWidth, 100)
+            // Glass noise texture overlay (simple grain effect)
+            Canvas { context, size in
+                // Simple procedural noise using random dots
+                for _ in 0..<200 {
+                    let x = CGFloat.random(in: 0..<size.width)
+                    let y = CGFloat.random(in: 0..<size.height)
+                    let alpha = CGFloat.random(in: 0.01..<0.05)
+                    context.fill(
+                        Circle().path(in: CGRect(x: x, y: y, width: 1, height: 1)),
+                        with: .color(.white.opacity(alpha))
                     )
-                )
-                .opacity(0.03)
-                .blendMode(.overlay)
+                }
+            }
+            .blendMode(.overlay)
         }
     }
     
