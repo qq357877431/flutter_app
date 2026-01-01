@@ -1,0 +1,59 @@
+workflows:
+  liquid-glass-demo:
+    name: Liquid Glass Demo (iOS 26)
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+    
+    environment:
+      xcode: 26.1
+      cocoapods: default
+    
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+      cancel_previous_builds: true
+    
+    scripts:
+      - name: Show Xcode version
+        script: |
+          xcodebuild -version
+          xcodebuild -showsdks
+      
+      - name: Build iOS App
+        script: |
+          cd LiquidGlassDemo
+          xcodebuild build \
+            -project LiquidGlassDemo.xcodeproj \
+            -scheme LiquidGlassDemo \
+            -destination 'generic/platform=iOS' \
+            -configuration Release \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+      
+      - name: Archive App
+        script: |
+          cd LiquidGlassDemo
+          xcodebuild archive \
+            -project LiquidGlassDemo.xcodeproj \
+            -scheme LiquidGlassDemo \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/LiquidGlassDemo.xcarchive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            SKIP_INSTALL=NO
+      
+      - name: Export Unsigned IPA
+        script: |
+          cd LiquidGlassDemo/build
+          mkdir -p Payload
+          cp -r LiquidGlassDemo.xcarchive/Products/Applications/LiquidGlassDemo.app Payload/
+          zip -r LiquidGlassDemo-unsigned.ipa Payload
+    
+    artifacts:
+      - LiquidGlassDemo/build/LiquidGlassDemo-unsigned.ipa
+      - LiquidGlassDemo/build/LiquidGlassDemo.xcarchive
