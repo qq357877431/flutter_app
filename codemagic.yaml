@@ -148,6 +148,7 @@ workflows:
       - name: Build SwiftUI App
         script: |
           cd swift_app
+          set -o pipefail
           xcodebuild build \
             -project SwiftApp.xcodeproj \
             -scheme SwiftApp \
@@ -155,7 +156,15 @@ workflows:
             -configuration Release \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee build_log.txt
+          
+          # If build failed, show errors
+          if [ $? -ne 0 ]; then
+            echo "=== BUILD ERRORS ==="
+            grep -A2 "error:" build_log.txt || true
+            exit 1
+          fi
       
       - name: Archive App
         script: |
