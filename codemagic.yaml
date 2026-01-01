@@ -57,3 +57,52 @@ workflows:
     artifacts:
       - LiquidGlassDemo/build/LiquidGlassDemo-unsigned.ipa
       - LiquidGlassDemo/build/LiquidGlassDemo.xcarchive
+
+  flutter-app-ios26:
+    name: Flutter App with Native Liquid Glass (iOS 26)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    
+    environment:
+      xcode: 26.1
+      flutter: stable
+      cocoapods: default
+    
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+      cancel_previous_builds: true
+    
+    scripts:
+      - name: Show Xcode and Flutter version
+        script: |
+          xcodebuild -version
+          flutter --version
+      
+      - name: Get Flutter dependencies
+        script: |
+          cd flutter_app
+          flutter pub get
+      
+      - name: Install CocoaPods dependencies
+        script: |
+          cd flutter_app/ios
+          pod install --repo-update
+      
+      - name: Build iOS App (Release)
+        script: |
+          cd flutter_app
+          flutter build ios --release --no-codesign
+      
+      - name: Export Unsigned IPA
+        script: |
+          cd flutter_app/build/ios/iphoneos
+          mkdir -p Payload
+          cp -r Runner.app Payload/
+          zip -r FlutterApp-iOS26-unsigned.ipa Payload
+    
+    artifacts:
+      - flutter_app/build/ios/iphoneos/FlutterApp-iOS26-unsigned.ipa

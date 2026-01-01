@@ -1,5 +1,6 @@
 import Flutter
 import UIKit
+import SwiftUI
 import CoreTelephony
 import UserNotifications
 
@@ -10,6 +11,11 @@ import UserNotifications
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     GeneratedPluginRegistrant.register(with: self)
+    
+    // Register Liquid Glass Tab Bar Platform View
+    let registrar = self.registrar(forPlugin: "LiquidGlassTabBar")!
+    let factory = LiquidGlassTabBarFactory(messenger: registrar.messenger())
+    registrar.register(factory, withId: "liquid_glass_tab_bar")
     
     // 设置通知代理，允许前台显示通知
     UNUserNotificationCenter.current().delegate = self
