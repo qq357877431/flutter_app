@@ -33,7 +33,7 @@ jobs:
         run: |
           flutter clean
           flutter pub get
-          flutter build apk --release
+          flutter build apk --release --no-tree-shake-icons
 
       - name: Upload APK as artifact
         uses: actions/upload-artifact@v4
