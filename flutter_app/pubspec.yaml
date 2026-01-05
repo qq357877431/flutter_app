@@ -12,7 +12,7 @@ dependencies:
   cupertino_icons: ^1.0.6
   flutter_riverpod: ^2.4.9
   dio: ^5.4.0
-  flutter_local_notifications: ^16.3.0
+  flutter_local_notifications: ^19.0.0
   shared_preferences: ^2.2.2
   intl: ^0.18.1
   timezone: ^0.9.2
