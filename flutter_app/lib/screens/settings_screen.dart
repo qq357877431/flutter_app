@@ -158,7 +158,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
                     icon: CupertinoIcons.sparkles, 
                     iconColors: [colors.orange, const Color(0xFFFFD60A)],
                     title: '版本', 
-                    value: '1.5.8', 
+                    value: '1.6.0', 
                     showArrow: false, 
                     colors: colors,
                   ),
